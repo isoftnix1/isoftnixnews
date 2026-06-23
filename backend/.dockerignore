@@ -1,0 +1,26 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Secrets - never include these in the image
+.env
+.env.*
+*.pem
+*.key
+
+# Dev/test files
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log

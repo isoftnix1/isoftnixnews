@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+
+import '../screens/admin/add_news_screen.dart';
+import '../screens/admin/admin_dashboard_screen.dart';
+import '../screens/admin/admin_login_screen.dart';
+import '../screens/admin/category_management_screen.dart';
+import '../screens/admin/edit_news_screen.dart';
+import '../screens/admin/news_list_screen.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/auth/register_screen.dart';
+import '../screens/splash/splash_screen.dart';
+import '../screens/user/home_screen.dart';
+import '../screens/user/news_details_screen.dart';
+import '../screens/user/notifications_screen.dart';
+import '../screens/user/profile_screen.dart';
+
+class AppRoutes {
+  AppRoutes._();
+
+  static const String splash = '/';
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String home = '/home';
+  // Used for navigation with a full NewsModel object (normal in-app navigation)
+  static const String newsDetails = '/news-details';
+  // Used for deep-link / onGenerateRoute navigation with a newsId string
+  static const String newsDetailsById = '/news';
+  static const String profile = '/profile';
+  static const String notifications = '/notifications';
+
+  static const String adminLogin = '/admin-login';
+  static const String adminDashboard = '/admin-dashboard';
+  static const String adminNewsList = '/admin-news-list';
+  static const String addNews = '/add-news';
+  static const String editNews = '/edit-news';
+  static const String manageCategories = '/manage-categories';
+
+  /// Static routes for simple navigation without arguments.
+  static final Map<String, WidgetBuilder> routes = {
+    splash: (context) => const SplashScreen(),
+    login: (context) => const LoginScreen(),
+    register: (context) => const RegisterScreen(),
+    home: (context) => const HomeScreen(),
+    // newsDetails is handled here for backward-compat (arg = NewsModel)
+    newsDetails: (context) => const NewsDetailsScreen(),
+    profile: (context) => const ProfileScreen(),
+    notifications: (context) => const NotificationsScreen(),
+    adminLogin: (context) => const AdminLoginScreen(),
+    adminDashboard: (context) => const AdminDashboardScreen(),
+    adminNewsList: (context) => const NewsListScreen(),
+    addNews: (context) => const AddNewsScreen(),
+    editNews: (context) => const EditNewsScreen(),
+    manageCategories: (context) => const CategoryManagementScreen(),
+  };
+
+  /// Dynamic route generator to handle:
+  /// - /news/{uuid}  →  NewsDetailsScreen loaded by ID (deep links)
+  ///
+  /// Falls back to a 404 screen for unrecognised routes.
+  static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    final name = settings.name ?? '';
+
+    // Handle /news/{uuid} — produced by DeepLinkService and share intents
+    if (name.startsWith('/news/')) {
+      final newsId = name.replaceFirst('/news/', '');
+      if (newsId.isNotEmpty) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => NewsDetailsScreen(newsId: newsId),
+        );
+      }
+    }
+
+    // Unknown route — show a safe error screen
+    return MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Page Not Found')),
+        body: Center(
+          child: Text('Route not found: $name'),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "isoftnix-news-backend",
+  "version": "1.0.0",
+  "description": "Backend API for ISoftNix News application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "express",
+    "postgresql",
+    "jwt",
+    "cloudinary",
+    "firebase"
+  ],
+  "author": "ISoftNix",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.4",
+    "dotenv": "^16.4.2",
+    "express": "^4.21.1",
+    "express-rate-limit": "^8.5.2",
+    "firebase-admin": "^14.0.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "pg": "^8.22.0",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
