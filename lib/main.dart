@@ -28,7 +28,7 @@ Future<void> main() async {
 
   // Load environment configuration
   // For production build: change filename to '.env.production'
-  await dotenv.load(fileName: '.env.development');
+  await dotenv.load(fileName: '.env.production');
 
   // Initialize Firebase
   await Firebase.initializeApp();
