@@ -1,9 +1,9 @@
 INSERT INTO users (id, name, email, password_hash, role)
 VALUES (
   gen_random_uuid(),
-  'Admin User',
-  'admin@isoftnix.com',
-  '$2a$10$wfFYckZ5KeOdS9XhrcA5D.31E5qWLJZRBSCjKpIEGaJ2etjpJ/9/O',
+  'Ad',
+  '.....',
+  '$2.........................',
   'admin'
 )
 ON CONFLICT (email) DO NOTHING;
