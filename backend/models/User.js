@@ -28,6 +28,14 @@ async function findById(id) {
   return result.rows[0] || null;
 }
 
+async function findAuthUserById(id) {
+  const result = await pool.query(
+    'SELECT id, email, role, is_active FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 async function updateUser(id, updates) {
   const fields = Object.entries(updates)
     .filter(([, value]) => value !== undefined)
@@ -53,6 +61,7 @@ module.exports = {
   createUser,
   findByEmail,
   findById,
+  findAuthUserById,
   updateUser,
   getAllUsers,
 };

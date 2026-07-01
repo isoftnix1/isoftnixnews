@@ -54,14 +54,14 @@ class _NewsListScreenState extends State<NewsListScreen> {
   }
 
   String _formatDateRange(DateTime start, DateTime end) {
-    String _fmt(DateTime d) {
+    String fmt(DateTime d) {
       const months = [
         '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
       return '${d.day} ${months[d.month]} ${d.year}';
     }
-    return '${_fmt(start)} – ${_fmt(end)}';
+    return '${fmt(start)} – ${fmt(end)}';
   }
 
   @override

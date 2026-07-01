@@ -1,11 +1,15 @@
 const { randomUUID } = require('crypto');
 const { pool } = require('../config/db');
 
-async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = null, startDate = null, endDate = null }) {
+async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = null, startDate = null, endDate = null, publishedOnly = false }) {
   const offset = (page - 1) * limit;
   const whereClauses = [];
   const values = [];
   let index = 1;
+
+  if (publishedOnly) {
+    whereClauses.push('n.is_published = true');
+  }
 
   if (search) {
     whereClauses.push(`(n.title_en ILIKE $${index} OR n.content_en ILIKE $${index} OR n.title_hi ILIKE $${index} OR n.title_mr ILIKE $${index})`);
@@ -89,7 +93,7 @@ async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = nul
   };
 }
 
-async function getNewsById(id) {
+async function getNewsById(id, { publishedOnly = false } = {}) {
   const result = await pool.query(
     `SELECT
       n.id,
@@ -121,7 +125,7 @@ async function getNewsById(id) {
     FROM news n
     LEFT JOIN categories c ON n.category_id = c.id
     LEFT JOIN users u ON n.author_id = u.id
-    WHERE n.id = $1`,
+    WHERE n.id = $1${publishedOnly ? ' AND n.is_published = true' : ''}`,
     [id]
   );
   return result.rows[0] || null;

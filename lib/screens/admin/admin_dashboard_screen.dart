@@ -89,7 +89,7 @@ class AdminDashboardScreen extends StatelessWidget {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                       ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
                       const SizedBox(height: 4),
@@ -107,7 +107,7 @@ class AdminDashboardScreen extends StatelessWidget {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                       ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
                       const SizedBox(height: 32),
@@ -184,17 +184,17 @@ class AdminDashboardScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              color.withOpacity(isDark ? 0.2 : 0.1),
-              color.withOpacity(isDark ? 0.05 : 0.02),
+              color.withValues(alpha: isDark ? 0.2 : 0.1),
+              color.withValues(alpha: isDark ? 0.05 : 0.02),
             ],
           ),
           border: Border.all(
-            color: color.withOpacity(isDark ? 0.3 : 0.2),
+            color: color.withValues(alpha: isDark ? 0.3 : 0.2),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -207,7 +207,7 @@ class AdminDashboardScreen extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(isTablet ? 12 : 10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: isTablet ? 30 : 28, color: color),
@@ -231,7 +231,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.3),
+                      .withValues(alpha: 0.3),
                 ),
               ],
             ),

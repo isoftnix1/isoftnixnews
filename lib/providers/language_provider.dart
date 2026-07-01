@@ -26,6 +26,8 @@ class LanguageProvider extends ChangeNotifier {
 
   Future<void> changeLanguage(BuildContext context, String languageCode) async {
     if (_currentLanguage == languageCode) return;
+    final newsProvider = Provider.of<NewsProvider>(context, listen: false);
+
     _currentLanguage = languageCode;
     await _languageService.setLanguage(languageCode);
     notifyListeners();
@@ -34,7 +36,6 @@ class LanguageProvider extends ChangeNotifier {
     _apiService.updateLanguagePreference(languageCode);
 
     // Reload both categories and news concurrently in the new language
-    final newsProvider = Provider.of<NewsProvider>(context, listen: false);
     await Future.wait([
       newsProvider.loadCategories(lang: languageCode),
       newsProvider.loadNews(refresh: true, lang: languageCode),

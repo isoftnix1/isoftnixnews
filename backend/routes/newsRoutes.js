@@ -7,6 +7,7 @@ const {
   deleteNews,
 } = require('../controllers/newsController');
 const authMiddleware = require('../middleware/authMiddleware');
+const optionalAuthMiddleware = require('../middleware/authMiddleware').optionalAuthMiddleware;
 const adminMiddleware = require('../middleware/adminMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const validate = require('../middleware/validateRequest');
@@ -14,9 +15,9 @@ const schemas = require('../utils/schemas');
 
 const router = express.Router();
 
-// Public routes
-router.get('/', validate(schemas.newsQuery, 'query'), listNews);
-router.get('/:id', validate(schemas.uuidParam, 'params'), getNewsByIdController);
+// Public routes (optional auth allows admins to include drafts)
+router.get('/', optionalAuthMiddleware, validate(schemas.newsQuery, 'query'), listNews);
+router.get('/:id', optionalAuthMiddleware, validate(schemas.uuidParam, 'params'), getNewsByIdController);
 
 // Admin-only routes
 router.post(

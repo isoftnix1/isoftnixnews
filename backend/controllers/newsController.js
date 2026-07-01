@@ -22,8 +22,17 @@ async function listNews(req, res, next) {
     const lang = req.query.lang || 'en';
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;
+    const isAdmin = req.user?.role === 'admin';
 
-    const result = await News.getNewsPage({ page, limit, search, categoryId, startDate, endDate });
+    const result = await News.getNewsPage({
+      page,
+      limit,
+      search,
+      categoryId,
+      startDate,
+      endDate,
+      publishedOnly: !isAdmin,
+    });
 
     // Map language specific columns to 'title' and 'content' for the response
     const mappedItems = result.items.map(item => {
@@ -72,7 +81,8 @@ async function listNews(req, res, next) {
 async function getNewsByIdController(req, res, next) {
   try {
     if (!isUuid(req.params.id)) return errorResponse(res, 400, 'Invalid article ID format');
-    const news = await News.getNewsById(req.params.id);
+    const isAdmin = req.user?.role === 'admin';
+    const news = await News.getNewsById(req.params.id, { publishedOnly: !isAdmin });
     if (!news) return errorResponse(res, 404, 'News not found');
 
     const lang = req.query.lang || 'en';

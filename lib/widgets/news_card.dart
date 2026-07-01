@@ -50,9 +50,9 @@ class NewsCard extends StatelessWidget {
                     fit: BoxFit.cover,
 
                     progressIndicatorBuilder: (context, url, progress) {
-                      print("Loading Image:");
-                      print(url);
-                      print(progress.downloaded);
+                      debugPrint('Loading Image:');
+                      debugPrint(url);
+                      debugPrint('${progress.downloaded}');
 
                       return const Center(
                         child: CircularProgressIndicator(),
@@ -62,9 +62,9 @@ class NewsCard extends StatelessWidget {
                     errorWidget: (context, url, error) {
                       return Container(
                         height: 200,
-                        color: Theme.of(context).cardTheme.color?.withOpacity(0.5) ?? Colors.grey.withOpacity(0.1),
+                        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ?? Colors.grey.withValues(alpha: 0.1),
                         child: Center(
-                          child: Icon(Icons.image_not_supported, color: Colors.grey.withOpacity(0.5), size: 40),
+                          child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40),
                         ),
                       );
                     },

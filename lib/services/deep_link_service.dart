@@ -4,7 +4,6 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
 import '../routes/app_routes.dart';
-import '../screens/user/external_article_screen.dart';
 import 'api_service.dart';
 
 /// Service responsible for handling all deep links in the Updates app.

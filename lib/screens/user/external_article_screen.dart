@@ -201,7 +201,7 @@ class _ExternalArticleScreenState extends State<ExternalArticleScreen> {
             Icon(
               Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
               size: 72,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 20),
             Text(

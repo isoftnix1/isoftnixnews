@@ -156,7 +156,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                           placeholder: (context, url) =>
                               const Center(child: CircularProgressIndicator()),
                           errorWidget: (context, url, error) =>
-                              Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withOpacity(0.5), size: 40)),
+                              Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
                         ),
                         // Gradient overlay for better text readability and seamless transition
                         DecoratedBox(

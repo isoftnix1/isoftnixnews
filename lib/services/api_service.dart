@@ -2,17 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import '../config/api_config.dart';
 import '../models/category_model.dart';
 import '../models/news_model.dart';
 import '../models/user_model.dart';
 import '../models/notification_model.dart';
 
 class ApiService {
-  // Loaded from .env.development or .env.production via flutter_dotenv
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5000/api';
+  static String get baseUrl => ApiConfig.baseUrl;
   static String? authToken;
 
   Future<UserModel> login(String email, String password) async {
@@ -52,7 +51,7 @@ class ApiService {
   Future<List<CategoryModel>> getCategories({String? lang}) async {
     final response = await _request(
       '/categories',
-      queryParameters: {if (lang != null) 'lang': lang},
+      queryParameters: {'lang': ?lang},
     );
     final list = response['data'] as List<dynamic>? ?? [];
     return list.map((e) => CategoryModel.fromJson(e)).toList();
@@ -93,7 +92,7 @@ class ApiService {
   }
 
   Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10}) async {
-    String _fmtDate(DateTime d) =>
+    String fmtDate(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     final response = await _request(
@@ -102,9 +101,9 @@ class ApiService {
         if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') 'categoryId': categoryId,
         'page': page.toString(),
         'limit': limit.toString(),
-        if (lang != null) 'lang': lang,
-        if (startDate != null) 'startDate': _fmtDate(startDate),
-        if (endDate != null) 'endDate': _fmtDate(endDate),
+        'lang': ?lang,
+        if (startDate != null) 'startDate': fmtDate(startDate),
+        if (endDate != null) 'endDate': fmtDate(endDate),
       },
     );
     final data = response['data'];
@@ -121,7 +120,7 @@ class ApiService {
     final response = await _request(
       '/news/$id',
       queryParameters: {
-        if (lang != null) 'lang': lang,
+        'lang': ?lang,
       },
     );
     return NewsModel.fromJson(response['data']);
