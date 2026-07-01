@@ -9,6 +9,7 @@ import '../screens/admin/news_list_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../screens/user/external_article_screen.dart';
 import '../screens/user/home_screen.dart';
 import '../screens/user/news_details_screen.dart';
 import '../screens/user/notifications_screen.dart';
@@ -34,6 +35,7 @@ class AppRoutes {
   static const String addNews = '/add-news';
   static const String editNews = '/edit-news';
   static const String manageCategories = '/manage-categories';
+  static const String externalArticle = '/external-article';
 
   /// Static routes for simple navigation without arguments.
   static final Map<String, WidgetBuilder> routes = {
@@ -67,6 +69,20 @@ class AppRoutes {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => NewsDetailsScreen(newsId: newsId),
+        );
+      }
+    }
+
+    // Handle /external-article — produced by DeepLinkService for external URLs
+    if (name == externalArticle) {
+      final args = settings.arguments;
+      if (args is Map<String, String>) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => ExternalArticleScreen(
+            title: args['title'] ?? '',
+            url: args['url'] ?? '',
+          ),
         );
       }
     }

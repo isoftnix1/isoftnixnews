@@ -29,12 +29,4 @@ class NotificationProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<void> registerToken(String token) async {
-    try {
-      await _apiService.registerDeviceToken(token);
-    } catch (_) {
-      // Fail silently for device token registration in background
-    }
-  }
 }

@@ -3,7 +3,8 @@ const { successResponse, errorResponse } = require('../utils/responseHandler');
 
 async function listCategories(req, res, next) {
   try {
-    const categories = await Category.getAllCategories();
+    const lang = req.query.lang || 'en';
+    const categories = await Category.getAllCategories(lang);
     return successResponse(res, 200, categories);
   } catch (error) {
     return next(error);

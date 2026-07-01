@@ -100,7 +100,7 @@ Widget build(BuildContext context) {
                   const SizedBox(height: 8),
 
                   Text(
-                    'Join ISoftNix News today',
+                    'Join Updates today',
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ).animate().fade().slideY(

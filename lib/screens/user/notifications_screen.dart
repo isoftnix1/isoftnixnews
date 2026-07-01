@@ -39,7 +39,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   itemBuilder: (context, index) {
                     final item = provider.notifications[index];
                     final date = item.createdAt ?? DateTime.now();
-                    final formattedDate = DateFormat.yMMMd().add_jm().format(date);
+                    final formattedDate = DateFormat('dd MMM yyyy, h:mm a').format(date.toLocal());
 
                     return ListTile(
                       leading: const CircleAvatar(

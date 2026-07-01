@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Updates</string>
+    <string name="notification_channel_name">Updates</string>
+    <string name="notification_channel_description">News updates and breaking stories</string>
+</resources>

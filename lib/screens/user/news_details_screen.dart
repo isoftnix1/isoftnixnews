@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../models/news_model.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/news_provider.dart';
 
 class NewsDetailsScreen extends StatefulWidget {
@@ -39,8 +40,13 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
     super.didChangeDependencies();
     if (_news == null && widget.newsId == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is NewsModel) {
-        setState(() => _news = args);
+      if (args is String) {
+        // ID passed as string — always fetch from API for full translated content
+        _loadNewsById(args);
+      } else if (args is NewsModel) {
+        // Fallback: if a full NewsModel is still passed (e.g. from deep links)
+        // fetch by ID to guarantee full translated content
+        _loadNewsById(args.id);
       }
     }
   }
@@ -52,7 +58,8 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
     });
 
     try {
-      final news = await context.read<NewsProvider>().getNewsById(id);
+      final lang = context.read<LanguageProvider>().currentLanguage;
+      final news = await context.read<NewsProvider>().getNewsById(id, lang: lang);
       if (mounted) {
         setState(() {
           _news = news;
@@ -76,7 +83,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
         ? '${news.content.substring(0, 150).trimRight()}...'
         : news.content;
     final deepLink = _buildDeepLink(news.id);
-    return '${news.title}\n\n$preview\n\nOpen in ISoftNix News:\n$deepLink';
+    return '${news.title}\n\n$preview\n\nOpen in Updates:\n$deepLink';
   }
 
   void _shareArticle(NewsModel news) {
@@ -133,14 +140,14 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: news.imageUrl.isNotEmpty ? 400 : null,
             pinned: true,
-            stretch: true,
+            stretch: news.imageUrl.isNotEmpty,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            flexibleSpace: FlexibleSpaceBar(
-              stretchModes: const [StretchMode.zoomBackground],
-              background: news.imageUrl.isNotEmpty
-                  ? Stack(
+            flexibleSpace: news.imageUrl.isNotEmpty
+                ? FlexibleSpaceBar(
+                    stretchModes: const [StretchMode.zoomBackground],
+                    background: Stack(
                       fit: StackFit.expand,
                       children: [
                         CachedNetworkImage(
@@ -149,7 +156,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                           placeholder: (context, url) =>
                               const Center(child: CircularProgressIndicator()),
                           errorWidget: (context, url, error) =>
-                              const Center(child: Icon(Icons.broken_image)),
+                              Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withOpacity(0.5), size: 40)),
                         ),
                         // Gradient overlay for better text readability and seamless transition
                         DecoratedBox(
@@ -166,9 +173,9 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                           ),
                         ),
                       ],
-                    )
-                  : Container(color: Theme.of(context).colorScheme.surface),
-            ),
+                    ),
+                  )
+                : null,
             actions: [
               Container(
                 margin: const EdgeInsets.only(right: 16),

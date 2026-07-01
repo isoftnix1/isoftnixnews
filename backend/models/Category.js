@@ -1,16 +1,30 @@
 const { randomUUID } = require('crypto');
 const { pool } = require('../config/db');
 
-async function getAllCategories() {
+const LANG_COL = { en: 'name_en', hi: 'name_hi', mr: 'name_mr' };
+
+function nameCol(lang) {
+  // Fall back to name_en for any unknown lang
+  return LANG_COL[lang] || 'name_en';
+}
+
+async function getAllCategories(lang = 'en') {
+  const col = nameCol(lang);
+  // Return localised name, falling back to name_en when translation is NULL
   const result = await pool.query(
-    'SELECT id, name, slug, created_at FROM categories ORDER BY name ASC'
+    `SELECT id,
+            COALESCE(${col}, name_en) AS name,
+            slug,
+            created_at
+     FROM categories
+     ORDER BY name_en ASC`
   );
   return result.rows;
 }
 
 async function getCategoryById(id) {
   const result = await pool.query(
-    'SELECT id, name, slug FROM categories WHERE id = $1',
+    'SELECT id, name_en AS name, slug FROM categories WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;
@@ -19,25 +33,31 @@ async function getCategoryById(id) {
 async function createCategory({ name, slug }) {
   const id = randomUUID();
   const result = await pool.query(
-    `INSERT INTO categories (id, name, slug)
+    `INSERT INTO categories (id, name_en, slug)
      VALUES ($1, $2, $3)
-     RETURNING id, name, slug, created_at`,
+     RETURNING id, name_en AS name, slug, created_at`,
     [id, name, slug]
   );
   return result.rows[0];
 }
 
 async function updateCategory(id, updates) {
-  const fields = Object.entries(updates)
-    .filter(([, value]) => value !== undefined)
-    .map(([key], index) => `${key} = $${index + 2}`);
+  // Map 'name' field from request to 'name_en' in the DB
+  const dbUpdates = {};
+  if (updates.name !== undefined) dbUpdates.name_en = updates.name;
+  if (updates.name_hi !== undefined) dbUpdates.name_hi = updates.name_hi;
+  if (updates.name_mr !== undefined) dbUpdates.name_mr = updates.name_mr;
+  if (updates.slug !== undefined) dbUpdates.slug = updates.slug;
 
-  if (!fields.length) return null;
+  const entries = Object.entries(dbUpdates);
+  if (!entries.length) return null;
 
-  const values = [id, ...Object.values(updates).filter((value) => value !== undefined)];
+  const fields = entries.map(([key], index) => `${key} = $${index + 2}`);
+  const values = [id, ...entries.map(([, v]) => v)];
 
   const result = await pool.query(
-    `UPDATE categories SET ${fields.join(', ')} WHERE id = $1 RETURNING id, name, slug, created_at`,
+    `UPDATE categories SET ${fields.join(', ')} WHERE id = $1
+     RETURNING id, name_en AS name, slug, created_at`,
     values
   );
   return result.rows[0] || null;

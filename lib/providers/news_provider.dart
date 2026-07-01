@@ -16,7 +16,10 @@ class NewsProvider extends ChangeNotifier {
   bool _hasMore = true;
   String? _errorMessage;
   String _selectedCategoryId = 'all';
+  String _currentLang = 'en';
   int _page = 1;
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
 
   List<NewsModel> get news => _news;
   List<CategoryModel> get categories => _categories;
@@ -24,13 +27,17 @@ class NewsProvider extends ChangeNotifier {
   bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
   String get selectedCategoryId => _selectedCategoryId;
+  DateTime? get selectedStartDate => _selectedStartDate;
+  DateTime? get selectedEndDate => _selectedEndDate;
+  bool get isDateFiltered => _selectedStartDate != null || _selectedEndDate != null;
 
-  Future<void> loadCategories() async {
+  Future<void> loadCategories({String? lang}) async {
     _isLoadingCategories = true;
     notifyListeners();
 
     try {
-      final categories = await _apiService.getCategories();
+      final effectiveLang = lang ?? _currentLang;
+      final categories = await _apiService.getCategories(lang: effectiveLang);
       _categories = [
         const CategoryModel(id: 'all', name: 'All', slug: 'all'),
         ...categories,
@@ -44,7 +51,7 @@ class NewsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadNews({bool refresh = false, String? categoryId}) async {
+  Future<void> loadNews({bool refresh = false, String? categoryId, String? lang, int limit = 10}) async {
     if (refresh) {
       _page = 1;
       _hasMore = true;
@@ -60,10 +67,17 @@ class NewsProvider extends ChangeNotifier {
       if (categoryId != null) {
         _selectedCategoryId = categoryId;
       }
+      if (lang != null) {
+        _currentLang = lang;
+      }
 
       final items = await _apiService.getNews(
         categoryId: _selectedCategoryId == 'all' ? null : _selectedCategoryId,
         page: _page,
+        lang: _currentLang,
+        startDate: _selectedStartDate,
+        endDate: _selectedEndDate,
+        limit: limit,
       );
 
       if (refresh || _page == 1) {
@@ -89,8 +103,8 @@ class NewsProvider extends ChangeNotifier {
     }
   }
 
-  Future<NewsModel> getNewsById(String id) async {
-    return _apiService.getNewsById(id);
+  Future<NewsModel> getNewsById(String id, {String? lang}) async {
+    return _apiService.getNewsById(id, lang: lang);
   }
 
   Future<void> addNews(NewsModel news, {File? imageFile, File? videoFile}) async {
@@ -152,5 +166,19 @@ class NewsProvider extends ChangeNotifier {
     _page = 1;
     _hasMore = true;
     notifyListeners();
+  }
+
+  /// Set a new date range and immediately refresh news from page 1.
+  Future<void> setDateFilter(DateTime start, DateTime end) async {
+    _selectedStartDate = start;
+    _selectedEndDate = end;
+    await loadNews(refresh: true, limit: 1000);
+  }
+
+  /// Clear the date filter and reload all news.
+  Future<void> clearDateFilter() async {
+    _selectedStartDate = null;
+    _selectedEndDate = null;
+    await loadNews(refresh: true, limit: 1000);
   }
 }

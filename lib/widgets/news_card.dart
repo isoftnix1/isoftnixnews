@@ -44,20 +44,30 @@ class NewsCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   child: CachedNetworkImage(
-                    imageUrl: news.imageUrl,
+                    imageUrl: news.imageUrl.trim(),
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 200,
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 200,
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      child: const Center(child: Icon(Icons.broken_image)),
-                    ),
+
+                    progressIndicatorBuilder: (context, url, progress) {
+                      print("Loading Image:");
+                      print(url);
+                      print(progress.downloaded);
+
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+
+                    errorWidget: (context, url, error) {
+                      return Container(
+                        height: 200,
+                        color: Theme.of(context).cardTheme.color?.withOpacity(0.5) ?? Colors.grey.withOpacity(0.1),
+                        child: Center(
+                          child: Icon(Icons.image_not_supported, color: Colors.grey.withOpacity(0.5), size: 40),
+                        ),
+                      );
+                    },
                   ),
                 ),
               Padding(
@@ -67,34 +77,64 @@ class NewsCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withAlpha(51),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            news.categoryName == null || news.categoryName!.isEmpty
-                                ? 'General'
-                                : news.categoryName!,
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: news.categories.isNotEmpty
+                                ? news.categories.map((c) {
+                                    final name = c['name']?.toString() ?? 'General';
+                                    return _buildCategoryChip(context, name);
+                                  }).toList()
+                                : [
+                                    _buildCategoryChip(
+                                        context,
+                                        news.categoryName == null || news.categoryName!.isEmpty
+                                            ? 'General'
+                                            : news.categoryName!)
+                                  ],
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          formattedDate,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontSize: 12,
-                                color: Colors.white.withAlpha(128),
-                              ),
+                        const SizedBox(width: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            formattedDate,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontSize: 12,
+                                  color: Colors.white.withAlpha(128),
+                                ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
+                    if (news.imageUrl.isEmpty && news.sourceName != null && news.sourceName!.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.language, size: 16, color: Colors.blue),
+                          const SizedBox(width: 6),
+                          Text(
+                            news.sourceName!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to read the complete article.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Text(
                       news.title,
                       style: Theme.of(context).textTheme.titleLarge,
@@ -113,6 +153,24 @@ class NewsCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(BuildContext context, String name) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withAlpha(51),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        name,
+        style: TextStyle(
+          color: Theme.of(context).primaryColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

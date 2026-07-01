@@ -76,3 +76,11 @@ yarn-error.log
 # OS Files
 .DS_Store
 Thumbs.db
+
+
+
+# Python virtual environment
+translation-service/venv/
+translation-service/__pycache__/
+**/__pycache__/
+*.pyc

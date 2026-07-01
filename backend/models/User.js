@@ -6,7 +6,7 @@ async function createUser({ name, email, phone = null, passwordHash, role = 'use
   const result = await pool.query(
     `INSERT INTO users (id, name, email, phone, password_hash, role)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, name, email, phone, role, created_at`,
+     RETURNING id, name, email, phone, role, preferred_language, created_at`,
     [id, name, email, phone, passwordHash, role]
   );
   return result.rows[0];
@@ -22,7 +22,7 @@ async function findByEmail(email) {
 
 async function findById(id) {
   const result = await pool.query(
-    'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
+    'SELECT id, name, email, phone, role, preferred_language, created_at FROM users WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;
@@ -38,7 +38,7 @@ async function updateUser(id, updates) {
   const values = [id, ...Object.values(updates).filter((value) => value !== undefined)];
 
   const result = await pool.query(
-    `UPDATE users SET ${fields.join(', ')} WHERE id = $1 RETURNING id, name, email, role, created_at`,
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $1 RETURNING id, name, email, phone, role, preferred_language, created_at`,
     values
   );
   return result.rows[0] || null;

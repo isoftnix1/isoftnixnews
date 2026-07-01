@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../routes/app_routes.dart';
+import '../l10n/app_localizations.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -89,7 +90,7 @@ class AppDrawer extends StatelessWidget {
               children: [
                 _DrawerItem(
                   icon: Icons.home_rounded,
-                  title: 'Home',
+                  title: AppLocalizations.of(context, 'home'),
                   onTap: () {
                     Navigator.pop(context);
                     if (ModalRoute.of(context)?.settings.name != AppRoutes.home) {
@@ -99,7 +100,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.person_rounded,
-                  title: 'Profile',
+                  title: AppLocalizations.of(context, 'profile'),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, AppRoutes.profile);
@@ -108,7 +109,7 @@ class AppDrawer extends StatelessWidget {
                 if (isAdmin)
                   _DrawerItem(
                     icon: Icons.admin_panel_settings_rounded,
-                    title: 'Admin Dashboard',
+                    title: AppLocalizations.of(context, 'admin_dashboard'),
                     onTap: () {
                       Navigator.pop(context);
                       if (ModalRoute.of(context)?.settings.name != AppRoutes.adminDashboard) {
@@ -123,7 +124,7 @@ class AppDrawer extends StatelessWidget {
                 if (user != null)
                   _DrawerItem(
                     icon: Icons.logout_rounded,
-                    title: 'Logout',
+                    title: AppLocalizations.of(context, 'logout'),
                     textColor: Colors.redAccent,
                     iconColor: Colors.redAccent,
                     onTap: () {
@@ -148,7 +149,7 @@ class AppDrawer extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: Text(
-                'ISoftNix News v1.0.0',
+                'Updates v1.0.0',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.textTheme.bodyMedium?.color?.withAlpha(100),
                 ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -48,8 +49,11 @@ class ApiService {
     return UserModel.fromJson(response['data']['user']);
   }
 
-  Future<List<CategoryModel>> getCategories() async {
-    final response = await _request('/categories');
+  Future<List<CategoryModel>> getCategories({String? lang}) async {
+    final response = await _request(
+      '/categories',
+      queryParameters: {if (lang != null) 'lang': lang},
+    );
     final list = response['data'] as List<dynamic>? ?? [];
     return list.map((e) => CategoryModel.fromJson(e)).toList();
   }
@@ -76,12 +80,31 @@ class ApiService {
     await _request('/categories/$id', method: 'DELETE');
   }
 
-  Future<List<NewsModel>> getNews({String? categoryId, int page = 1}) async {
+  Future<void> updateLanguagePreference(String lang) async {
+    try {
+      await _request(
+        '/auth/preferences',
+        method: 'PATCH',
+        body: {'preferred_language': lang},
+      );
+    } catch (e) {
+      debugPrint('Failed to update language preference on server: $e');
+    }
+  }
+
+  Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10}) async {
+    String _fmtDate(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
     final response = await _request(
       '/news',
       queryParameters: {
         if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') 'categoryId': categoryId,
         'page': page.toString(),
+        'limit': limit.toString(),
+        if (lang != null) 'lang': lang,
+        if (startDate != null) 'startDate': _fmtDate(startDate),
+        if (endDate != null) 'endDate': _fmtDate(endDate),
       },
     );
     final data = response['data'];
@@ -94,8 +117,13 @@ class ApiService {
     return list.map((e) => NewsModel.fromJson(e)).toList();
   }
 
-  Future<NewsModel> getNewsById(String id) async {
-    final response = await _request('/news/$id');
+  Future<NewsModel> getNewsById(String id, {String? lang}) async {
+    final response = await _request(
+      '/news/$id',
+      queryParameters: {
+        if (lang != null) 'lang': lang,
+      },
+    );
     return NewsModel.fromJson(response['data']);
   }
 
@@ -152,6 +180,14 @@ class ApiService {
     return true;
   }
 
+  Future<UserModel> updateProfile({String? name, String? phone}) async {
+    final body = <String, dynamic>{};
+    if (name != null && name.isNotEmpty) body['name'] = name;
+    if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+    final response = await _request('/auth/me', method: 'PUT', body: body);
+    return UserModel.fromJson(response['data']['user']);
+  }
+
   Future<Map<String, dynamic>> _request(
     String path, {
     String method = 'GET',
@@ -182,6 +218,9 @@ class ApiService {
           break;
         case 'DELETE':
           response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          break;
+        case 'PATCH':
+          response = await http.patch(uri, headers: headers, body: requestBody).timeout(const Duration(seconds: 10));
           break;
         default:
           response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
@@ -222,10 +261,18 @@ class ApiService {
     }
 
     // Add string fields
-    request.fields['title'] = news.title;
-    request.fields['content'] = news.content;
+    if (news.titleEn != null) request.fields['title_en'] = news.titleEn!;
+    if (news.contentEn != null) request.fields['content_en'] = news.contentEn!;
+    if (news.titleHi != null) request.fields['title_hi'] = news.titleHi!;
+    if (news.contentHi != null) request.fields['content_hi'] = news.contentHi!;
+    if (news.titleMr != null) request.fields['title_mr'] = news.titleMr!;
+    if (news.contentMr != null) request.fields['content_mr'] = news.contentMr!;
     if (news.categoryId != null) {
       request.fields['categoryId'] = news.categoryId!;
+    }
+    for (var catId in news.categoryIds) {
+      // Backend body-parser (express) parses repeated fields as an array if named with brackets
+      request.fields['categoryIds[${news.categoryIds.indexOf(catId)}]'] = catId;
     }
     request.fields['isPublished'] = news.isPublished.toString();
     if (news.imageUrl.isNotEmpty) {
@@ -233,6 +280,12 @@ class ApiService {
     }
     if (news.videoUrl != null && news.videoUrl!.isNotEmpty) {
       request.fields['videoUrl'] = news.videoUrl!;
+    }
+    if (news.sourceName != null) {
+      request.fields['source_name'] = news.sourceName!;
+    }
+    if (news.sourceUrl != null) {
+      request.fields['source_url'] = news.sourceUrl!;
     }
 
     // Add files

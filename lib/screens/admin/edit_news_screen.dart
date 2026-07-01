@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/news_model.dart';
 import '../../providers/news_provider.dart';
+import '../user/news_details_screen.dart';
 
 class EditNewsScreen extends StatefulWidget {
   const EditNewsScreen({super.key});
@@ -16,9 +17,15 @@ class EditNewsScreen extends StatefulWidget {
 
 class _EditNewsScreenState extends State<EditNewsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
-  String? _selectedCategoryId;
+  final _titleEnController = TextEditingController();
+  final _contentEnController = TextEditingController();
+  final _titleHiController = TextEditingController();
+  final _contentHiController = TextEditingController();
+  final _titleMrController = TextEditingController();
+  final _contentMrController = TextEditingController();
+  final _sourceNameController = TextEditingController();
+  final _sourceUrlController = TextEditingController();
+  List<String> _selectedCategoryIds = [];
 
   File? _selectedImage;
   File? _selectedVideo;
@@ -37,9 +44,18 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is NewsModel) {
         _news = args;
-        _titleController.text = _news!.title;
-        _contentController.text = _news!.content;
-        _selectedCategoryId = _news!.categoryId;
+        _titleEnController.text = _news!.titleEn ?? _news!.title;
+        _contentEnController.text = _news!.contentEn ?? _news!.content;
+        _titleHiController.text = _news!.titleHi ?? '';
+        _contentHiController.text = _news!.contentHi ?? '';
+        _titleMrController.text = _news!.titleMr ?? '';
+        _contentMrController.text = _news!.contentMr ?? '';
+        _sourceNameController.text = _news!.sourceName ?? '';
+        _sourceUrlController.text = _news!.sourceUrl ?? '';
+        _selectedCategoryIds = List.from(_news!.categoryIds);
+        if (_selectedCategoryIds.isEmpty && _news!.categoryId != null) {
+          _selectedCategoryIds.add(_news!.categoryId!);
+        }
         setState(() {});
       }
 
@@ -52,8 +68,14 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
+    _titleEnController.dispose();
+    _contentEnController.dispose();
+    _titleHiController.dispose();
+    _contentHiController.dispose();
+    _titleMrController.dispose();
+    _contentMrController.dispose();
+    _sourceNameController.dispose();
+    _sourceUrlController.dispose();
     super.dispose();
   }
 
@@ -73,9 +95,9 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _news == null) return;
-    if (_selectedCategoryId == null) {
+    if (_selectedCategoryIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+        const SnackBar(content: Text('Please select at least one category')),
       );
       return;
     }
@@ -85,11 +107,19 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
     await provider.updateNews(
       NewsModel(
         id: _news!.id,
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
+        title: _titleEnController.text.trim(),
+        content: _contentEnController.text.trim(),
+        titleEn: _titleEnController.text.trim(),
+        contentEn: _contentEnController.text.trim(),
+        titleHi: _titleHiController.text.trim(),
+        contentHi: _contentHiController.text.trim(),
+        titleMr: _titleMrController.text.trim(),
+        contentMr: _contentMrController.text.trim(),
         imageUrl: _news!.imageUrl,
         videoUrl: _news!.videoUrl,
-        categoryId: _selectedCategoryId,
+        categoryIds: _selectedCategoryIds,
+        sourceName: _sourceNameController.text.trim().isNotEmpty ? _sourceNameController.text.trim() : null,
+        sourceUrl: _sourceUrlController.text.trim().isNotEmpty ? _sourceUrlController.text.trim() : null,
         authorName: _news!.authorName,
         createdAt: _news!.createdAt,
         updatedAt: DateTime.now(),
@@ -123,36 +153,13 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Required' : null,
-            ),
+            _buildLanguageSection('English', _titleEnController, _contentEnController),
+            const SizedBox(height: 16),
+            _buildLanguageSection('Hindi (हिन्दी)', _titleHiController, _contentHiController),
+            const SizedBox(height: 16),
+            _buildLanguageSection('Marathi (मराठी)', _titleMrController, _contentMrController),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _contentController,
-              maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Content'),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: dropdownCategories.any((c) => c.id == _selectedCategoryId)
-                  ? _selectedCategoryId
-                  : null,
-              hint: const Text('Select Category'),
-              items: dropdownCategories
-                  .map((cat) => DropdownMenuItem(
-                        value: cat.id,
-                        child: Text(cat.name),
-                      ))
-                  .toList(),
-              onChanged: (value) => setState(() => _selectedCategoryId = value),
-              validator: (value) => value == null ? 'Required' : null,
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
+            _buildCategorySelector(dropdownCategories),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -224,20 +231,260 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
                 ),
               ),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Update News'),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'Original Source (Optional)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _sourceNameController,
+              decoration: const InputDecoration(
+                labelText: 'Source Name',
+                hintText: 'e.g. Indian Express',
+              ),
+              validator: (value) {
+                if (_sourceUrlController.text.trim().isNotEmpty && (value == null || value.trim().isEmpty)) {
+                  return 'Source Name is required when Source URL is provided';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _sourceUrlController,
+              decoration: const InputDecoration(
+                labelText: 'Source URL',
+                hintText: 'e.g. https://indianexpress.com/...',
+              ),
+              keyboardType: TextInputType.url,
+              validator: (value) {
+                if (_sourceNameController.text.trim().isNotEmpty && (value == null || value.trim().isEmpty)) {
+                  return 'Source URL is required when Source Name is provided';
+                }
+                if (value != null && value.trim().isNotEmpty) {
+                  final uri = Uri.tryParse(value.trim());
+                  if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+                    return 'Please enter a valid HTTP/HTTPS URL';
+                  }
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _previewNews,
+                    child: const Text('Preview News'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Update News'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _previewNews() {
+    final title = _titleEnController.text.trim().isNotEmpty 
+        ? _titleEnController.text.trim() 
+        : (_titleHiController.text.trim().isNotEmpty 
+            ? _titleHiController.text.trim() 
+            : _titleMrController.text.trim());
+            
+    final content = _contentEnController.text.trim().isNotEmpty 
+        ? _contentEnController.text.trim() 
+        : (_contentHiController.text.trim().isNotEmpty 
+            ? _contentHiController.text.trim() 
+            : _contentMrController.text.trim());
+
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter at least a title and content to preview.')),
+      );
+      return;
+    }
+
+    final dummyNews = NewsModel(
+      id: 'preview',
+      title: title,
+      content: content,
+      imageUrl: _selectedImage?.path ?? _news!.imageUrl,
+      videoUrl: _selectedVideo?.path ?? _news!.videoUrl, 
+      categoryIds: _selectedCategoryIds,
+      categoryName: _news!.categoryName,
+      authorName: _news!.authorName,
+      createdAt: _news!.createdAt,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewsDetailsScreen(news: dummyNews),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSection(
+    String title,
+    TextEditingController titleController,
+    TextEditingController contentController,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(labelText: 'Title'),
+          validator: (value) => value!.isEmpty ? 'Required' : null,
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: contentController,
+          maxLines: 5,
+          decoration: const InputDecoration(labelText: 'Content'),
+          validator: (value) => value!.isEmpty ? 'Required' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySelector(List<dynamic> availableCategories) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Categories *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            if (_selectedCategoryIds.isEmpty)
+              const Text('(Required)', style: TextStyle(color: Colors.red, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: _selectedCategoryIds.map((id) {
+            final matched = availableCategories.where((c) => c.id == id);
+            if (matched.isEmpty) return const SizedBox.shrink();
+            final cat = matched.first;
+            return Chip(
+              label: Text(cat.name),
+              deleteIcon: const Icon(Icons.close, size: 18),
+              onDeleted: () {
+                setState(() {
+                  _selectedCategoryIds.remove(id);
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => _showCategoryPicker(availableCategories),
+          icon: const Icon(Icons.add),
+          label: const Text('Add Category'),
+        ),
+      ],
+    );
+  }
+
+  void _showCategoryPicker(List<dynamic> availableCategories) {
+    // Create a local copy of selected IDs to manage state inside the dialog
+    final localSelectedIds = List<String>.from(_selectedCategoryIds);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.6,
+              maxChildSize: 0.9,
+              minChildSize: 0.4,
+              builder: (_, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Select Categories',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedCategoryIds = List.from(localSelectedIds);
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: availableCategories.length,
+                        itemBuilder: (context, index) {
+                          final cat = availableCategories[index];
+                          final isSelected = localSelectedIds.contains(cat.id);
+                          return CheckboxListTile(
+                            title: Text(cat.name),
+                            value: isSelected,
+                            onChanged: (bool? checked) {
+                              setModalState(() {
+                                if (checked == true) {
+                                  localSelectedIds.add(cat.id);
+                                } else {
+                                  localSelectedIds.remove(cat.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

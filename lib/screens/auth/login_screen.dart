@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(Icons.newspaper_rounded, size: 64, color: Colors.white)
+                            Icon(Icons.newspaper_rounded, size: 64, color: Theme.of(context).colorScheme.primary)
                                 .animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
                             const SizedBox(height: 16),
                             Text(

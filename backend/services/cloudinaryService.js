@@ -26,7 +26,26 @@ async function deleteFromCloudinary(publicId, resourceType = 'image') {
   await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 }
 
+/**
+ * Extracts the Cloudinary public_id from a secure_url.
+ * Example input:  https://res.cloudinary.com/djnzq0i1v/image/upload/v1234/news/images/abc123.jpg
+ * Example output: news/images/abc123
+ * Returns null if the URL is not a valid Cloudinary URL.
+ */
+function extractCloudinaryPublicId(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    // Match the path after /upload/v<version>/
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(\.[^.]+)?$/);
+    if (!match) return null;
+    return match[1]; // e.g. news/images/abc123
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   uploadToCloudinary,
   deleteFromCloudinary,
+  extractCloudinaryPublicId,
 };

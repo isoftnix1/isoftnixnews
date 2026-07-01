@@ -26,13 +26,14 @@ async function register(req, res, next) {
 
     const passwordHash = await bcrypt.hash(req.body.password, 10);
 
-    // Ensure role is handled correctly (defaulting to 'user' unless specified)
+    // SECURITY: Role is ALWAYS 'user' for self-registration.
+    // Never trust the client to set their own role.
     const user = await User.createUser({
       name: req.body.name,
       email: req.body.email,
       phone: req.body.phone || null,
       passwordHash,
-      role: req.body.role || 'user',
+      role: 'user',
     });
 
     const token = generateToken(user);
@@ -91,7 +92,16 @@ async function getProfile(req, res, next) {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return errorResponse(res, 404, 'User not found');
-    return successResponse(res, 200, { user }, 'Profile retrieved successfully');
+    return successResponse(res, 200, {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || null,
+        role: user.role,
+        created_at: user.created_at,
+      }
+    }, 'Profile retrieved successfully');
   } catch (error) {
     return next(error);
   }
@@ -119,9 +129,31 @@ async function updateProfile(req, res, next) {
   }
 }
 
+async function updatePreferences(req, res, next) {
+  try {
+    const { preferred_language } = req.body;
+    
+    if (!preferred_language) {
+      return errorResponse(res, 400, 'preferred_language is required');
+    }
+    
+    if (!['en', 'hi', 'mr'].includes(preferred_language)) {
+      return errorResponse(res, 400, 'Invalid language code. Allowed values: en, hi, mr');
+    }
+
+    const updatedUser = await User.updateUser(req.user.id, { preferred_language });
+    if (!updatedUser) return errorResponse(res, 404, 'User not found');
+
+    return successResponse(res, 200, { preferred_language: updatedUser.preferred_language }, 'Preferences updated successfully');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
   getProfile,
   updateProfile,
+  updatePreferences,
 };

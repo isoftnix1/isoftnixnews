@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(50),
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(20) NOT NULL DEFAULT 'user',
+  preferred_language VARCHAR(5) DEFAULT 'en',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -14,7 +15,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) UNIQUE NOT NULL,
+  name_en VARCHAR(255) UNIQUE NOT NULL,
+  name_hi TEXT,
+  name_mr TEXT,
   slug VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -22,8 +25,12 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS news (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(255) NOT NULL,
-  content TEXT NOT NULL,
+  title_en VARCHAR(255) NOT NULL,
+  content_en TEXT NOT NULL,
+  title_hi TEXT,
+  content_hi TEXT,
+  title_mr TEXT,
+  content_mr TEXT,
   image_url TEXT,
   video_url TEXT,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,

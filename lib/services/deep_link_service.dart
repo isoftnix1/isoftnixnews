@@ -4,8 +4,10 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
 import '../routes/app_routes.dart';
+import '../screens/user/external_article_screen.dart';
+import 'api_service.dart';
 
-/// Service responsible for handling all deep links in the ISoftNix News app.
+/// Service responsible for handling all deep links in the Updates app.
 ///
 /// Deep link format: isoftnixnews://news/{uuid}
 ///
@@ -68,22 +70,46 @@ class DeepLinkService {
     }
   }
 
-  /// Pushes to the NewsDetailsScreen using the named route with the newsId.
+  /// Navigates to the appropriate screen based on whether the article is
+  /// internal or external.
   ///
-  /// Uses the Navigator key to navigate from outside the widget tree.
-  void handleNewsOpen(String newsId) {
+  /// - External (has source_url) → ExternalArticleScreen (in-app WebView)
+  /// - Internal                  → NewsDetailsScreen
+  void handleNewsOpen(String newsId) async {
+    // Attempt to fetch the article to check for an external sourceUrl.
+    try {
+      final news = await ApiService().getNewsById(newsId);
+      if (news.sourceUrl != null && news.sourceUrl!.isNotEmpty) {
+        // External article → in-app WebView
+        _push(
+          AppRoutes.externalArticle,
+          arguments: <String, String>{
+            'title': news.title,
+            'url': news.sourceUrl!,
+          },
+        );
+        return;
+      }
+    } catch (_) {
+      // If the fetch fails, fall through to NewsDetailsScreen which will
+      // handle its own error/loading state.
+    }
+
+    // Internal article (or fetch failed) → NewsDetailsScreen
+    _push('${AppRoutes.newsDetailsById}/$newsId');
+  }
+
+  /// Helper: push a named route, retrying after the first frame if the
+  /// navigator is not yet available (e.g. cold-start deep link).
+  void _push(String routeName, {Object? arguments}) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) {
-      // Retry after the first frame is rendered
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        navigatorKey.currentState?.pushNamed(
-          '${AppRoutes.newsDetailsById}/$newsId',
-        );
+        navigatorKey.currentState?.pushNamed(routeName, arguments: arguments);
       });
       return;
     }
-
-    navigator.pushNamed('${AppRoutes.newsDetailsById}/$newsId');
+    navigator.pushNamed(routeName, arguments: arguments);
   }
 
   /// Disposes the link subscription. Call this in the app's dispose method.

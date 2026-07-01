@@ -15,6 +15,42 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Build the allowed origins list
+const configuredOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [];
+
+const devOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://localhost:8080',
+];
+
+const allowedOrigins = isDev
+  ? [...new Set([...configuredOrigins, ...devOrigins])]
+  : configuredOrigins;
+
+if (!isDev && allowedOrigins.length === 0) {
+  console.warn('[CORS] WARNING: ALLOWED_ORIGINS is not set in production mode. All origins will be blocked.');
+}
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (mobile apps, Postman, server-to-server) with no origin header
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS REJECTED] Origin not allowed: ${origin}`);
+    return callback(new Error(`CORS: Origin ${origin} is not allowed`), false);
+  },
+  credentials: true,
+};
+
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
@@ -35,21 +71,21 @@ const loginLimiter = rateLimit({
 });
 
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(limiter);
-app.use(morgan('dev'));
+app.use(morgan(isDev ? 'dev' : 'combined'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "ISoftNix News API is running 🚀",
+    message: "Updates API is running 🚀",
     version: "1.0.0",
   });
 });
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'ISoftNix News API is running' });
+  res.json({ status: 'ok', message: 'Updates API is running' });
 });
 
 app.use('/api/auth/login', loginLimiter);
@@ -65,6 +101,7 @@ app.use(errorMiddleware);
 async function startServer() {
   try {
     await initializeDatabase();
+    
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

@@ -5,11 +5,14 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/news_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/app_drawer.dart';
+import 'external_article_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,8 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NewsProvider>().loadCategories();
-      context.read<NewsProvider>().loadNews(refresh: true);
+      final lang = context.read<LanguageProvider>().currentLanguage;
+      context.read<NewsProvider>().loadCategories(lang: lang);
+      context.read<NewsProvider>().loadNews(refresh: true, lang: lang);
     });
   }
 
@@ -47,6 +51,70 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _showLanguageBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Consumer<LanguageProvider>(
+          builder: (context, provider, _) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      'Language',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('English'),
+                    trailing: provider.currentLanguage == 'en'
+                        ? const Icon(Icons.check, color: Colors.blue)
+                        : null,
+                    onTap: () {
+                      provider.changeLanguage(context, 'en');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('हिंदी'),
+                    trailing: provider.currentLanguage == 'hi'
+                        ? const Icon(Icons.check, color: Colors.blue)
+                        : null,
+                    onTap: () {
+                      provider.changeLanguage(context, 'hi');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('मराठी'),
+                    trailing: provider.currentLanguage == 'mr'
+                        ? const Icon(Icons.check, color: Colors.blue)
+                        : null,
+                    onTap: () {
+                      provider.changeLanguage(context, 'mr');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final newsProvider = context.watch<NewsProvider>();
@@ -54,7 +122,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ISoftNix News'),
+
+        leadingWidth: 150, // <-- ADD IT HERE
+
+        leading: Builder(
+          builder: (context) {
+            return Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+
+                const SizedBox(width: 10), // 👈 ADD THIS
+
+                GestureDetector(
+                  onTap: () => _showLanguageBottomSheet(context),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language, size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.watch<LanguageProvider>().currentLanguage == 'hi'
+                            ? 'हिन्दी'
+                            : (context.watch<LanguageProvider>().currentLanguage == 'mr' ? 'मराठी' : 'English'),
+                      ),
+                      const Icon(Icons.arrow_drop_down, size: 18),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        title: Text(
+          AppLocalizations.of(context, 'app_title'),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(
@@ -106,9 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, index) {
                         if (index == newsProvider.news.length) {
                           if (!newsProvider.hasMore) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: Text('No more articles')), 
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Center(child: Text(AppLocalizations.of(context, 'no_more_articles'))), 
                             );
                           }
                           return const Padding(
@@ -122,11 +229,29 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: NewsCard(
                             news: item,
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.newsDetails,
-                              arguments: item,
-                            ),
+                            onTap: () {
+                              final sourceUrl = item.sourceUrl;
+                              if (sourceUrl != null && sourceUrl.isNotEmpty) {
+                                // External article → in-app WebView
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ExternalArticleScreen(
+                                      title: item.title,
+                                      url: sourceUrl,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                // Internal article → NewsDetailsScreen
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.newsDetails,
+                                  arguments: item.id,
+                                );
+                              }
+                            },
+
                           ),
                         ).animate().fade(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms);
                       },

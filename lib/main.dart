@@ -9,15 +9,11 @@ import 'providers/category_provider.dart';
 import 'providers/news_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/deep_link_service.dart';
+import 'services/push_notification_service.dart';
 import 'theme/app_theme.dart';
-
-// Background message handler — must be a top-level function
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-}
 
 /// Global navigator key used by [DeepLinkService] to navigate
 /// from outside the widget tree.
@@ -26,17 +22,12 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment configuration
-  // For production build: change filename to '.env.production'
-  await dotenv.load(fileName: '.env.production');
+  await dotenv.load(fileName: '.env.development');
 
-  // Initialize Firebase
   await Firebase.initializeApp();
 
-  // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Request notification permission (important for Android 13+)
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
     badge: true,
@@ -62,30 +53,13 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> {
   void initState() {
     super.initState();
     _deepLinkService = DeepLinkService(navigatorKey: widget.navigatorKey);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _deepLinkService.init();
-      _setupInteractedMessage();
+      await PushNotificationService.instance.initialize(
+        deepLinkService: _deepLinkService,
+      );
+      await PushNotificationService.instance.setupInteractedMessage();
     });
-  }
-
-  Future<void> _setupInteractedMessage() async {
-    // Get any messages which caused the application to open from a terminated state
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      _handleMessage(initialMessage);
-    }
-
-    // Also handle any interaction when the app is in the background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
-  }
-
-  void _handleMessage(RemoteMessage message) {
-    if (message.data.containsKey('newsId')) {
-      final newsId = message.data['newsId'];
-      if (newsId is String && newsId.isNotEmpty) {
-        _deepLinkService.handleNewsOpen(newsId);
-      }
-    }
   }
 
   @override
@@ -103,11 +77,12 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> {
         ChangeNotifierProvider(create: (_) => NewsProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'ISoftNix News',
+            title: 'Updates',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),

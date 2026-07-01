@@ -9,11 +9,16 @@ const {
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const upload = require('../middleware/uploadMiddleware');
+const validate = require('../middleware/validateRequest');
+const schemas = require('../utils/schemas');
 
 const router = express.Router();
 
-router.get('/', listNews);
-router.get('/:id', getNewsByIdController);
+// Public routes
+router.get('/', validate(schemas.newsQuery, 'query'), listNews);
+router.get('/:id', validate(schemas.uuidParam, 'params'), getNewsByIdController);
+
+// Admin-only routes
 router.post(
   '/',
   authMiddleware,
@@ -28,12 +33,13 @@ router.put(
   '/:id',
   authMiddleware,
   adminMiddleware,
+  validate(schemas.uuidParam, 'params'),
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'video', maxCount: 1 },
   ]),
   updateNews
 );
-router.delete('/:id', authMiddleware, adminMiddleware, deleteNews);
+router.delete('/:id', authMiddleware, adminMiddleware, validate(schemas.uuidParam, 'params'), deleteNews);
 
 module.exports = router;

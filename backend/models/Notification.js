@@ -25,6 +25,27 @@ async function getAllTokens() {
   return result.rows.map((row) => row.token);
 }
 
+async function getTokensGroupedByLanguage() {
+  const result = await pool.query(`
+    SELECT dt.token, COALESCE(u.preferred_language, 'en') as lang
+    FROM device_tokens dt
+    LEFT JOIN users u ON dt.user_id = u.id
+  `);
+  
+  const grouped = { en: [], hi: [], mr: [] };
+  
+  result.rows.forEach(row => {
+    const lang = row.lang;
+    if (grouped[lang]) {
+      grouped[lang].push(row.token);
+    } else {
+      grouped['en'].push(row.token);
+    }
+  });
+  
+  return grouped;
+}
+
 async function createNotification({ userId, title, body, data = {} }) {
   const id = randomUUID();
   const result = await pool.query(
@@ -52,6 +73,7 @@ module.exports = {
   registerDeviceToken,
   getTokensForUser,
   getAllTokens,
+  getTokensGroupedByLanguage,
   createNotification,
   getNotificationsForUser,
 };

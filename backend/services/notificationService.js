@@ -1,6 +1,16 @@
 const admin = require('../config/firebase');
 const { getMessaging } = require('firebase-admin/messaging');
 
+const ANDROID_CHANNEL_ID = 'updates_channel';
+const ANDROID_NOTIFICATION_ICON = 'ic_notification';
+const ANDROID_NOTIFICATION_COLOR = '#F97316';
+
+function normalizeData(data = {}) {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, String(value ?? '')])
+  );
+}
+
 async function sendNotificationToTokens(tokens, title, body, data = {}) {
   if (!tokens || tokens.length === 0) return { successCount: 0, failureCount: 0 };
 
@@ -12,7 +22,15 @@ async function sendNotificationToTokens(tokens, title, body, data = {}) {
       title,
       body,
     },
-    data,
+    data: normalizeData(data),
+    android: {
+      priority: 'high',
+      notification: {
+        channelId: ANDROID_CHANNEL_ID,
+        icon: ANDROID_NOTIFICATION_ICON,
+        color: ANDROID_NOTIFICATION_COLOR,
+      },
+    },
     tokens: cleanTokens,
   };
 
@@ -30,8 +48,6 @@ async function sendNotificationToTokens(tokens, title, body, data = {}) {
 }
 
 async function sendNotificationToUsers(userIds, title, body, data = {}) {
-  // This is a placeholder for future user lookup logic.
-  // The actual notification dispatch is handled by the device token table.
   return sendNotificationToTokens([], title, body, data);
 }
 

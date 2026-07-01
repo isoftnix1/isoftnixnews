@@ -2,10 +2,12 @@ const News = require('../models/News');
 const Category = require('../models/Category');
 const { successResponse, errorResponse } = require('../utils/responseHandler');
 const { validateNewsInput } = require('../utils/validators');
-const { uploadToCloudinary } = require('../services/cloudinaryService');
+const { uploadToCloudinary, deleteFromCloudinary, extractCloudinaryPublicId } = require('../services/cloudinaryService');
 const { sendNotificationToTokens } = require('../services/notificationService');
-const { getAllTokens, createNotification } = require('../models/Notification');
+const { getTokensGroupedByLanguage, createNotification } = require('../models/Notification');
 const User = require('../models/User');
+const { validateFileSignature } = require('../utils/validateFileType');
+const upload = require('../middleware/uploadMiddleware');
 
 function isUuid(str) {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
@@ -17,8 +19,50 @@ async function listNews(req, res, next) {
     const limit = Number(req.query.limit || 10);
     const search = req.query.search || '';
     const categoryId = req.query.categoryId || null;
+    const lang = req.query.lang || 'en';
+    const startDate = req.query.startDate || null;
+    const endDate = req.query.endDate || null;
 
-    const result = await News.getNewsPage({ page, limit, search, categoryId });
+    const result = await News.getNewsPage({ page, limit, search, categoryId, startDate, endDate });
+
+    // Map language specific columns to 'title' and 'content' for the response
+    const mappedItems = result.items.map(item => {
+      let title = item.title_en;
+      let content = item.content_en;
+      let category_name = item.category_name_en;
+
+      let mappedCategories = item.categories || [];
+
+      if (lang === 'hi') {
+        title = item.title_hi || title;
+        content = item.content_hi || content;
+        category_name = item.category_name_hi || category_name;
+        mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_hi || c.name_en }));
+      } else if (lang === 'mr') {
+        title = item.title_mr || title;
+        content = item.content_mr || content;
+        category_name = item.category_name_mr || category_name;
+        mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_mr || c.name_en }));
+      } else {
+        mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_en }));
+      }
+
+      // Truncate content for list preview
+      if (content && content.length > 200) {
+        content = content.substring(0, 200);
+      }
+
+      return {
+        ...item,
+        title,
+        content,
+        category_name,
+        categories: mappedCategories,
+      };
+    });
+
+    result.items = mappedItems;
+
     return successResponse(res, 200, result);
   } catch (error) {
     return next(error);
@@ -30,7 +74,37 @@ async function getNewsByIdController(req, res, next) {
     if (!isUuid(req.params.id)) return errorResponse(res, 400, 'Invalid article ID format');
     const news = await News.getNewsById(req.params.id);
     if (!news) return errorResponse(res, 404, 'News not found');
-    return successResponse(res, 200, news);
+
+    const lang = req.query.lang || 'en';
+    let title = news.title_en;
+    let content = news.content_en;
+    let category_name = news.category_name_en;
+
+    let mappedCategories = news.categories || [];
+
+    if (lang === 'hi') {
+      title = news.title_hi || title;
+      content = news.content_hi || content;
+      category_name = news.category_name_hi || category_name;
+      mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_hi || c.name_en }));
+    } else if (lang === 'mr') {
+      title = news.title_mr || title;
+      content = news.content_mr || content;
+      category_name = news.category_name_mr || category_name;
+      mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_mr || c.name_en }));
+    } else {
+      mappedCategories = mappedCategories.map(c => ({ ...c, name: c.name_en }));
+    }
+
+    const mappedNews = {
+      ...news,
+      title,
+      content,
+      category_name,
+      categories: mappedCategories,
+    };
+
+    return successResponse(res, 200, mappedNews);
   } catch (error) {
     return next(error);
   }
@@ -41,11 +115,30 @@ async function createNews(req, res, next) {
     const validationError = validateNewsInput(req.body);
     if (validationError) return errorResponse(res, 400, validationError);
 
-    const category = await Category.getCategoryById(req.body.categoryId);
-    if (!category) return errorResponse(res, 404, 'Category not found');
+    const categoryIds = req.body.categoryIds;
+    // Just verify the primary category exists for validation
+    if (categoryIds && categoryIds.length > 0) {
+      const category = await Category.getCategoryById(categoryIds[0]);
+      if (!category) return errorResponse(res, 404, 'Category not found');
+    }
 
     const imageFile = req.files?.image?.[0];
     const videoFile = req.files?.video?.[0];
+
+    // ── Per-type size enforcement ────────────────────────────────────────────
+    if (imageFile && imageFile.size > upload.IMAGE_SIZE_LIMIT) {
+      return errorResponse(res, 400, `Image file too large. Maximum allowed size is ${upload.IMAGE_SIZE_LIMIT / (1024 * 1024)} MB`);
+    }
+
+    // ── Magic-byte validation (must run before Cloudinary) ───────────────────
+    if (imageFile) {
+      const sigError = await validateFileSignature(imageFile);
+      if (sigError) return res.status(422).json({ success: false, message: sigError, data: null });
+    }
+    if (videoFile) {
+      const sigError = await validateFileSignature(videoFile);
+      if (sigError) return res.status(422).json({ success: false, message: sigError, data: null });
+    }
 
     let imageUrl = req.body.imageUrl || null;
     let videoUrl = req.body.videoUrl || null;
@@ -61,24 +154,46 @@ async function createNews(req, res, next) {
     }
 
     const savedNews = await News.createNews({
-      title: req.body.title,
-      content: req.body.content,
+      title_en: req.body.title_en,
+      content_en: req.body.content_en,
+      title_hi: req.body.title_hi,
+      content_hi: req.body.content_hi,
+      title_mr: req.body.title_mr,
+      content_mr: req.body.content_mr,
       authorId: req.user.id,
-      categoryId: req.body.categoryId,
+      categoryIds: req.body.categoryIds,
       imageUrl,
       videoUrl,
+      source_name: req.body.source_name || null,
+      source_url: req.body.source_url || null,
       isPublished: req.body.isPublished !== undefined ? req.body.isPublished === true || req.body.isPublished === 'true' : true,
     });
 
-    const tokens = await getAllTokens();
-    if (tokens.length) {
-      await sendNotificationToTokens(
-        tokens,
-        'New article published',
-        savedNews.title,
-        { newsId: savedNews.id }
-      );
-    }
+    const groupedTokens = await getTokensGroupedByLanguage();
+    
+    const sendBatch = async (tokens, title, body) => {
+      if (tokens && tokens.length > 0) {
+        // Trim body at a word boundary, roughly 120 chars
+        let trimmedBody = body || 'New Article';
+        trimmedBody = trimmedBody.replace(/\n/g, ' ').trim();
+        if (trimmedBody.length > 120) {
+          const sub = trimmedBody.substring(0, 120);
+          trimmedBody = sub.substring(0, Math.min(sub.length, sub.lastIndexOf(' '))) + '...';
+        }
+        await sendNotificationToTokens(
+          tokens,
+          title || 'New Article',
+          trimmedBody,
+          { newsId: savedNews.id }
+        );
+      }
+    };
+
+    await Promise.all([
+      sendBatch(groupedTokens.en, savedNews.title_en, savedNews.content_en),
+      sendBatch(groupedTokens.hi, savedNews.title_hi, savedNews.content_hi),
+      sendBatch(groupedTokens.mr, savedNews.title_mr, savedNews.content_mr)
+    ]);
 
     // Save notification to database for all users so it appears in the app's notification center
     const allUsers = await User.getAllUsers();
@@ -87,7 +202,7 @@ async function createNews(req, res, next) {
         createNotification({
           userId: user.id,
           title: 'New article published',
-          body: savedNews.title,
+          body: savedNews.title_en || 'New Article',
           data: { newsId: savedNews.id }
         })
       )
@@ -108,10 +223,30 @@ async function updateNews(req, res, next) {
     const imageFile = req.files?.image?.[0];
     const videoFile = req.files?.video?.[0];
 
+    // ── Per-type size enforcement ────────────────────────────────────────────
+    if (imageFile && imageFile.size > upload.IMAGE_SIZE_LIMIT) {
+      return errorResponse(res, 400, `Image file too large. Maximum allowed size is ${upload.IMAGE_SIZE_LIMIT / (1024 * 1024)} MB`);
+    }
+
+    // ── Magic-byte validation (must run before Cloudinary) ───────────────────
+    if (imageFile) {
+      const sigError = await validateFileSignature(imageFile);
+      if (sigError) return res.status(422).json({ success: false, message: sigError, data: null });
+    }
+    if (videoFile) {
+      const sigError = await validateFileSignature(videoFile);
+      if (sigError) return res.status(422).json({ success: false, message: sigError, data: null });
+    }
+
     let updates = {
-      title: req.body.title,
-      content: req.body.content,
-      category_id: req.body.categoryId,
+      title_en: req.body.title_en,
+      content_en: req.body.content_en,
+      content_hi: req.body.content_hi,
+      title_mr: req.body.title_mr,
+      content_mr: req.body.content_mr,
+      // category_id will be handled by the model if categoryIds is provided
+      source_name: req.body.source_name === '' ? null : req.body.source_name,
+      source_url: req.body.source_url === '' ? null : req.body.source_url,
       is_published: req.body.isPublished,
     };
 
@@ -138,7 +273,8 @@ async function updateNews(req, res, next) {
       if (updates[key] === '') delete updates[key];
     });
 
-    const updatedNews = await News.updateNews(req.params.id, updates);
+    const categoryIds = req.body.categoryIds;
+    const updatedNews = await News.updateNews(req.params.id, updates, categoryIds);
     return successResponse(res, 200, updatedNews, 'News updated successfully');
   } catch (error) {
     return next(error);
@@ -151,7 +287,32 @@ async function deleteNews(req, res, next) {
     const existing = await News.getNewsById(req.params.id);
     if (!existing) return errorResponse(res, 404, 'News not found');
 
+    // Step 1: Delete DB record immediately (user intent is to remove the article)
     await News.deleteNews(req.params.id);
+
+    // Step 2: Best-effort Cloudinary cleanup — never blocks the response
+    const imagePublicId = extractCloudinaryPublicId(existing.image_url);
+    const videoPublicId = extractCloudinaryPublicId(existing.video_url);
+
+    const cleanupPromises = [];
+    if (imagePublicId) {
+      cleanupPromises.push(
+        deleteFromCloudinary(imagePublicId, 'image').catch(err =>
+          console.warn(`[CLOUDINARY CLEANUP] Failed to delete image ${imagePublicId}:`, err.message)
+        )
+      );
+    }
+    if (videoPublicId) {
+      cleanupPromises.push(
+        deleteFromCloudinary(videoPublicId, 'video').catch(err =>
+          console.warn(`[CLOUDINARY CLEANUP] Failed to delete video ${videoPublicId}:`, err.message)
+        )
+      );
+    }
+
+    // Fire cleanup in background — do not await, do not block response
+    Promise.all(cleanupPromises);
+
     return successResponse(res, 200, null, 'News deleted successfully');
   } catch (error) {
     return next(error);

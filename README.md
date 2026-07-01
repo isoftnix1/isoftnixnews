@@ -1,6 +1,6 @@
-# ISoftNix News Platform
+# Updates Platform
 
-ISoftNix News is a production-ready, full-stack news application featuring a high-performance Flutter mobile application and a scalable Node.js/Express backend. It is designed to deliver a premium, fast, and highly secure news reading experience, reminiscent of platforms like Inshorts.
+Updates is a production-ready, full-stack news application featuring a high-performance Flutter mobile application and a scalable Node.js/Express backend. It is designed to deliver a premium, fast, and highly secure news reading experience, reminiscent of platforms like Inshorts.
 
 ## 🚀 Key Features
 
