@@ -161,6 +161,30 @@ class NewsProvider extends ChangeNotifier {
     }
   }
 
+  Future<int> deleteMultipleNews(List<String> ids) async {
+    if (ids.isEmpty) return 0;
+
+    _isLoadingNews = true;
+    notifyListeners();
+
+    var deletedCount = 0;
+    try {
+      for (final id in ids) {
+        await _apiService.deleteNews(id);
+        _news.removeWhere((item) => item.id == id);
+        deletedCount++;
+      }
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoadingNews = false;
+      notifyListeners();
+    }
+
+    return deletedCount;
+  }
+
   void selectCategory(String categoryId) {
     _selectedCategoryId = categoryId;
     _page = 1;

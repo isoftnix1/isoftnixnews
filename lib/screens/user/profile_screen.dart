@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/validators.dart';
 import '../../l10n/app_localizations.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().refreshProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +191,7 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.phone_outlined,
                     label: 'Phone',
                     value: (user?.phone != null && user!.phone!.isNotEmpty)
-                        ? user.phone!
+                        ? '+91 ${user.phone!}'
                         : 'Not set',
                     isLast: true,
                     onEdit: user == null
@@ -187,8 +202,19 @@ class ProfileScreen extends StatelessWidget {
                               label: 'Phone Number',
                               currentValue: user.phone ?? '',
                               keyboardType: TextInputType.phone,
-                              onSave: (val) =>
-                                  context.read<AuthProvider>().updateProfile(phone: val),
+                              prefixText: '+91 ',
+                              maxLength: 10,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              validator: Validators.indianPhone,
+                              helperText:
+                                  '10-digit Indian mobile number starting with 6–9',
+                              onSave: (val) => context
+                                  .read<AuthProvider>()
+                                  .updateProfile(
+                                    phone: Validators.normalizeIndianPhone(val),
+                                  ),
                             ),
                   ),
                 ],
@@ -246,6 +272,11 @@ class ProfileScreen extends StatelessWidget {
     required Future<bool> Function(String) onSave,
     bool readOnly = false,
     String? readOnlyNote,
+    String? prefixText,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+    String? helperText,
   }) async {
     final controller = TextEditingController(text: currentValue);
     final formKey = GlobalKey<FormState>();
@@ -283,19 +314,25 @@ class ProfileScreen extends StatelessWidget {
                       controller: controller,
                       keyboardType: keyboardType,
                       readOnly: readOnly,
+                      maxLength: maxLength,
+                      inputFormatters: inputFormatters,
                       decoration: InputDecoration(
                         labelText: label,
+                        prefixText: prefixText,
+                        helperText: helperText,
+                        counterText: maxLength != null ? '' : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (val) {
-                        if (!readOnly &&
-                            (val == null || val.trim().isEmpty)) {
-                          return '$label cannot be empty';
-                        }
-                        return null;
-                      },
+                      validator: validator ??
+                          (val) {
+                            if (!readOnly &&
+                                (val == null || val.trim().isEmpty)) {
+                              return '$label cannot be empty';
+                            }
+                            return null;
+                          },
                     ),
                     if (auth.errorMessage != null)
                       Padding(

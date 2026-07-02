@@ -70,6 +70,22 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { message: 'Too many password reset attempts from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const verifyOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { message: 'Too many verification attempts from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(limiter);
@@ -90,6 +106,9 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', loginLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/verify-reset-otp', verifyOtpLimiter);
+app.use('/api/auth/reset-password', verifyOtpLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/categories', categoryRoutes);

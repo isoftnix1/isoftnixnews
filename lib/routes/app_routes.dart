@@ -6,8 +6,11 @@ import '../screens/admin/admin_login_screen.dart';
 import '../screens/admin/category_management_screen.dart';
 import '../screens/admin/edit_news_screen.dart';
 import '../screens/admin/news_list_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/reset_password_screen.dart';
+import '../screens/auth/verify_otp_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/user/external_article_screen.dart';
 import '../screens/user/home_screen.dart';
@@ -21,6 +24,9 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
+  static const String verifyOtp = '/verify-otp';
+  static const String resetPassword = '/reset-password';
   static const String home = '/home';
   // Used for navigation with a full NewsModel object (normal in-app navigation)
   static const String newsDetails = '/news-details';
@@ -42,6 +48,7 @@ class AppRoutes {
     splash: (context) => const SplashScreen(),
     login: (context) => const LoginScreen(),
     register: (context) => const RegisterScreen(),
+    forgotPassword: (context) => const ForgotPasswordScreen(),
     home: (context) => const HomeScreen(),
     // newsDetails is handled here for backward-compat (arg = NewsModel)
     newsDetails: (context) => const NewsDetailsScreen(),
@@ -83,6 +90,26 @@ class AppRoutes {
             title: args['title'] ?? '',
             url: args['url'] ?? '',
           ),
+        );
+      }
+    }
+
+    if (name == verifyOtp) {
+      final email = settings.arguments;
+      if (email is String && email.isNotEmpty) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => VerifyOtpScreen(email: email),
+        );
+      }
+    }
+
+    if (name == resetPassword) {
+      final resetToken = settings.arguments;
+      if (resetToken is String && resetToken.isNotEmpty) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => ResetPasswordScreen(resetToken: resetToken),
         );
       }
     }

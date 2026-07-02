@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validateRegisterInput, validateLoginInput } = require('../utils/validators');
 const { successResponse, errorResponse } = require('../utils/responseHandler');
+const { normalizeIndianPhone } = require('../utils/phoneUtils');
 const User = require('../models/User');
 
 function generateToken(user) {
@@ -31,7 +32,7 @@ async function register(req, res, next) {
     const user = await User.createUser({
       name: req.body.name,
       email: req.body.email,
-      phone: req.body.phone || null,
+      phone: normalizeIndianPhone(req.body.phone),
       passwordHash,
       role: 'user',
     });
@@ -44,6 +45,7 @@ async function register(req, res, next) {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || null,
         role: user.role
       },
       token
@@ -78,6 +80,7 @@ async function login(req, res, next) {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || null,
         role: user.role // 'admin' or 'user'
       },
       token
@@ -111,7 +114,7 @@ async function updateProfile(req, res, next) {
   try {
     const updates = {};
     if (req.body.name) updates.name = req.body.name;
-    if (req.body.phone) updates.phone = req.body.phone;
+    if (req.body.phone) updates.phone = normalizeIndianPhone(req.body.phone);
     if (req.body.password) {
       updates.password_hash = await bcrypt.hash(req.body.password, 10);
     }

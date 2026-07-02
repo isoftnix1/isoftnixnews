@@ -99,6 +99,13 @@ async function initializeDatabase() {
         ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
         ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
     `);
+
+    await client.query(`
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS reset_otp_hash TEXT,
+        ADD COLUMN IF NOT EXISTS reset_otp_expiry TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS password_reset_version INTEGER NOT NULL DEFAULT 0;
+    `);
   } finally {
     client.release();
   }

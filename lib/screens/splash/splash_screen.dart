@@ -57,59 +57,80 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(40),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 6),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // ── Centered logo + branding ───────────────────────────────────
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Responsive logo — large but never overflows
+                  Builder(builder: (context) {
+                    final size = MediaQuery.of(context).size;
+                    final logoSize = (size.shortestSide * 0.5).clamp(160.0, 280.0);
+                    return Image.asset(
+                      'assets/icon/app_icon.png',
+                      width: logoSize,
+                      height: logoSize,
+                      fit: BoxFit.contain,
+                    );
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  // App name
+                  const Text(
+                    'Updates',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Tagline
+                  Text(
+                    AppLocalizations.of(context, 'splash_subtitle'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF888888),
+                      letterSpacing: 0.3,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26),
-                child: Image.asset(
-                  'assets/icon/app_icon.png',
-                  width: 110,
-                  height: 110,
-                  fit: BoxFit.cover,
+            ),
+          ),
+
+          // ── Loading indicator pinned to bottom ─────────────────────────
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 48,
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    const Color(0xFFE64A19).withAlpha(180),
+                  ),
                 ),
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            Text(
-              AppLocalizations.of(context, 'app_title'),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              AppLocalizations.of(context, 'splash_subtitle'),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(160),
-                fontSize: 14,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
+

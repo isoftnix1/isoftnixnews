@@ -187,6 +187,44 @@ class ApiService {
     return UserModel.fromJson(response['data']['user']);
   }
 
+  Future<void> forgotPassword(String email) async {
+    await _request(
+      '/auth/forgot-password',
+      method: 'POST',
+      body: {'email': email},
+    );
+  }
+
+  Future<String> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _request(
+      '/auth/verify-reset-otp',
+      method: 'POST',
+      body: {'email': email, 'otp': otp},
+    );
+    final token = response['data']?['resetToken'];
+    if (token is! String || token.isEmpty) {
+      throw Exception('Invalid server response. Please try again.');
+    }
+    return token;
+  }
+
+  Future<void> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    await _request(
+      '/auth/reset-password',
+      method: 'POST',
+      body: {
+        'resetToken': resetToken,
+        'newPassword': newPassword,
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> _request(
     String path, {
     String method = 'GET',

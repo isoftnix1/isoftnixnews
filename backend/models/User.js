@@ -57,6 +57,52 @@ async function getAllUsers() {
   return result.rows;
 }
 
+async function setPasswordResetOtp(userId, otpHash, expiry) {
+  await pool.query(
+    `UPDATE users
+     SET reset_otp_hash = $2,
+         reset_otp_expiry = $3,
+         password_reset_version = password_reset_version + 1,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [userId, otpHash, expiry]
+  );
+}
+
+async function clearPasswordResetOtp(userId) {
+  await pool.query(
+    `UPDATE users
+     SET reset_otp_hash = NULL,
+         reset_otp_expiry = NULL,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [userId]
+  );
+}
+
+async function findByEmailForPasswordReset(email) {
+  const result = await pool.query(
+    `SELECT id, email, is_active, reset_otp_hash, reset_otp_expiry, password_reset_version
+     FROM users
+     WHERE email = $1`,
+    [email]
+  );
+  return result.rows[0] || null;
+}
+
+async function completePasswordReset(userId, passwordHash) {
+  await pool.query(
+    `UPDATE users
+     SET password_hash = $2,
+         reset_otp_hash = NULL,
+         reset_otp_expiry = NULL,
+         password_reset_version = password_reset_version + 1,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [userId, passwordHash]
+  );
+}
+
 module.exports = {
   createUser,
   findByEmail,
@@ -64,4 +110,8 @@ module.exports = {
   findAuthUserById,
   updateUser,
   getAllUsers,
+  setPasswordResetOtp,
+  clearPasswordResetOtp,
+  findByEmailForPasswordReset,
+  completePasswordReset,
 };

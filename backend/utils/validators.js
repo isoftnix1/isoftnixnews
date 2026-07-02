@@ -3,13 +3,19 @@ function isNonEmpty(value) {
   return value.trim().length > 0;
 }
 
+const { isValidIndianMobile } = require('./phoneUtils');
+
 function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function validateRegisterInput({ name, email, password }) {
+function validateRegisterInput({ name, email, password, phone }) {
   if (!isNonEmpty(name)) return 'Name is required';
   if (!isEmail(email)) return 'Valid email is required';
+
+  if (!isValidIndianMobile(phone)) {
+    return 'Enter a valid 10-digit Indian mobile number (starting with 6–9)';
+  }
   
   const strongPasswordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
   if (!password || !strongPasswordRegex.test(password)) {

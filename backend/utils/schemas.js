@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { INDIAN_MOBILE_PATTERN, normalizeIndianPhone } = require('./phoneUtils');
 
 // ─────────────────────────────────────────────
 // Reusable primitives
@@ -17,9 +18,45 @@ const lang = Joi.string()
 const positiveInt = (defaultVal) =>
   Joi.number().integer().min(1).default(defaultVal);
 
+const indianPhone = Joi.string()
+  .trim()
+  .required()
+  .custom((value, helpers) => {
+    const normalized = normalizeIndianPhone(value);
+    if (!normalized || !INDIAN_MOBILE_PATTERN.test(normalized)) {
+      return helpers.error('string.indianPhone');
+    }
+    return normalized;
+  })
+  .messages({
+    'string.empty': 'Phone number is required',
+    'any.required': 'Phone number is required',
+    'string.indianPhone':
+      'Enter a valid 10-digit Indian mobile number (starting with 6–9)',
+  });
+
+const optionalIndianPhone = Joi.string()
+  .trim()
+  .optional()
+  .allow('', null)
+  .custom((value, helpers) => {
+    if (value == null || value === '') return value;
+    const normalized = normalizeIndianPhone(value);
+    if (!normalized || !INDIAN_MOBILE_PATTERN.test(normalized)) {
+      return helpers.error('string.indianPhone');
+    }
+    return normalized;
+  })
+  .messages({
+    'string.indianPhone':
+      'Enter a valid 10-digit Indian mobile number (starting with 6–9)',
+  });
+
 // ─────────────────────────────────────────────
 // Auth schemas
 // ─────────────────────────────────────────────
+
+const passwordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
 
 const register = Joi.object({
   name: Joi.string().trim().min(2).max(100).required()
@@ -27,13 +64,13 @@ const register = Joi.object({
   email: Joi.string().email().lowercase().required()
     .messages({ 'string.email': 'A valid email address is required' }),
   password: Joi.string()
-    .pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+    .pattern(passwordPattern)
     .required()
     .messages({
       'string.pattern.base':
         'Password must be at least 8 characters and contain: an uppercase letter, a lowercase letter, a number, and a special character (@$!%*#?&)',
     }),
-  phone: Joi.string().trim().max(20).optional().allow('', null),
+  phone: indianPhone,
 });
 
 const login = Joi.object({
@@ -45,9 +82,9 @@ const login = Joi.object({
 
 const updateProfile = Joi.object({
   name: Joi.string().trim().min(2).max(100).optional(),
-  phone: Joi.string().trim().max(20).optional().allow('', null),
+  phone: optionalIndianPhone,
   password: Joi.string()
-    .pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+    .pattern(passwordPattern)
     .optional()
     .messages({
       'string.pattern.base':
@@ -58,6 +95,33 @@ const updateProfile = Joi.object({
 const preferences = Joi.object({
   preferred_language: lang.required()
     .messages({ 'any.required': 'preferred_language is required' }),
+});
+
+const forgotPassword = Joi.object({
+  email: Joi.string().email().lowercase().required()
+    .messages({ 'string.email': 'A valid email address is required' }),
+});
+
+const verifyResetOtp = Joi.object({
+  email: Joi.string().email().lowercase().required()
+    .messages({ 'string.email': 'A valid email address is required' }),
+  otp: Joi.string().pattern(/^\d{6}$/).required()
+    .messages({
+      'string.pattern.base': 'OTP must be exactly 6 digits',
+      'string.empty': 'OTP is required',
+    }),
+});
+
+const resetPassword = Joi.object({
+  resetToken: Joi.string().trim().min(20).required()
+    .messages({ 'string.empty': 'Reset token is required' }),
+  newPassword: Joi.string()
+    .pattern(passwordPattern)
+    .required()
+    .messages({
+      'string.pattern.base':
+        'Password must be at least 8 characters and contain: an uppercase letter, a lowercase letter, a number, and a special character (@$!%*#?&)',
+    }),
 });
 
 // ─────────────────────────────────────────────
@@ -140,6 +204,9 @@ module.exports = {
   login,
   updateProfile,
   preferences,
+  forgotPassword,
+  verifyResetOtp,
+  resetPassword,
   createNews,
   newsQuery,
   createCategory,

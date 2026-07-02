@@ -63,6 +63,7 @@ class AuthProvider extends ChangeNotifier {
       if (ApiService.authToken != null) {
         await _storage.write(key: 'auth_token', value: ApiService.authToken);
       }
+      await _refreshUserProfile();
       // Register FCM token to backend
       _registerFcmToken();
       return true;
@@ -96,8 +97,68 @@ class AuthProvider extends ChangeNotifier {
       if (ApiService.authToken != null) {
         await _storage.write(key: 'auth_token', value: ApiService.authToken);
       }
+      await _refreshUserProfile();
       // Register FCM token to backend
       _registerFcmToken();
+      return true;
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> forgotPassword({required String email}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.forgotPassword(email);
+      return true;
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _apiService.verifyResetOtp(email: email, otp: otp);
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.resetPassword(
+        resetToken: resetToken,
+        newPassword: newPassword,
+      );
       return true;
     } catch (e) {
       _errorMessage = _cleanError(e);
@@ -133,6 +194,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshProfile() async {
+    try {
+      _user = await _apiService.getProfile();
+      notifyListeners();
+    } catch (e) {
+      // Keep existing profile data if refresh fails
+    }
+  }
+
   Future<void> _registerFcmToken() async {
     try {
       final token = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 5));
@@ -143,6 +213,15 @@ class AuthProvider extends ChangeNotifier {
       // Ignore token generation failure in production
     }
   }
+
+  Future<void> _refreshUserProfile() async {
+    try {
+      _user = await _apiService.getProfile();
+    } catch (e) {
+      // Keep login/register user payload if profile refresh fails
+    }
+  }
+
   /// Strips the raw Dart 'Exception:' prefix for clean UI display.
   String _cleanError(Object e) {
     return e.toString().replaceAll('Exception: ', '').trim();
