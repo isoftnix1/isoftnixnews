@@ -26,8 +26,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       final fileInfo = await DefaultCacheManager().getFileFromCache(widget.url);
       
       if (fileInfo != null) {
+        debugPrint('📹 [CACHE HIT] VideoPlayer loading local file: ${widget.url}');
         _controller = VideoPlayerController.file(fileInfo.file);
       } else {
+        debugPrint('☁️ [NETWORK] VideoPlayer streaming & caching: ${widget.url}');
         _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
         DefaultCacheManager().downloadFile(widget.url).catchError((_) => fileInfo);
       }

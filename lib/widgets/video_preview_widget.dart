@@ -52,8 +52,10 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       final fileInfo = await DefaultCacheManager().getFileFromCache(widget.url);
       
       if (fileInfo != null) {
+        debugPrint('📹 [CACHE HIT] VideoPreview loading local file: ${widget.url}');
         _controller = VideoPlayerController.file(fileInfo.file);
       } else {
+        debugPrint('☁️ [NETWORK] VideoPreview streaming & caching: ${widget.url}');
         _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
         // Silently cache for future scroll loops
         DefaultCacheManager().downloadFile(widget.url).catchError((_) => fileInfo);
