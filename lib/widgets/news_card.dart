@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../models/news_model.dart';
+import 'video_preview_widget.dart';
 
 class NewsCard extends StatelessWidget {
   final NewsModel news;
@@ -43,18 +44,18 @@ class NewsCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
-                _buildVideoThumbnail(context)
+                VideoPreviewWidget(url: news.videoUrl!)
               else if (news.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   child: CachedNetworkImage(
-                    imageUrl: news.imageUrl.trim(),
+                    imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Theme.of(context).colorScheme.surfaceVariant ?? Colors.grey[300]!,
-                      highlightColor: Theme.of(context).colorScheme.surface ?? Colors.grey[100]!,
+                      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      highlightColor: Theme.of(context).colorScheme.surface,
                       child: Container(
                         height: 200,
                         width: double.infinity,
@@ -160,6 +161,16 @@ class NewsCard extends StatelessWidget {
     );
   }
 
+  String _optimizeCloudinaryUrl(String url) {
+    if (url.contains('cloudinary.com') && !url.contains('q_auto')) {
+      final split = url.split('/upload/');
+      if (split.length == 2) {
+        return '${split[0]}/upload/q_auto,f_auto,w_800/${split[1]}';
+      }
+    }
+    return url;
+  }
+
   Widget _buildCategoryChip(BuildContext context, String name) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -175,63 +186,6 @@ class NewsCard extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-    );
-  }
-
-  String _getVideoThumbnailUrl(String videoUrl) {
-    if (videoUrl.isEmpty) return '';
-    if (videoUrl.contains('cloudinary.com')) {
-      final lastDotIndex = videoUrl.lastIndexOf('.');
-      if (lastDotIndex != -1) {
-         return '${videoUrl.substring(0, lastDotIndex)}.jpg';
-      }
-    }
-    return '';
-  }
-
-  Widget _buildVideoThumbnail(BuildContext context) {
-    final thumbnailUrl = _getVideoThumbnailUrl(news.videoUrl!);
-    final fallbackUrl = news.imageUrl.isNotEmpty ? news.imageUrl : thumbnailUrl;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: CachedNetworkImage(
-            imageUrl: fallbackUrl.trim(),
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Shimmer.fromColors(
-              baseColor: Theme.of(context).colorScheme.surfaceVariant ?? Colors.grey[300]!,
-              highlightColor: Theme.of(context).colorScheme.surface ?? Colors.grey[100]!,
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                color: Colors.white,
-              ),
-            ),
-            errorWidget: (context, url, error) {
-              return Container(
-                height: 200,
-                color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ?? Colors.grey.withValues(alpha: 0.1),
-                child: Center(
-                  child: Icon(Icons.videocam_off, color: Colors.grey.withValues(alpha: 0.5), size: 40),
-                ),
-              );
-            },
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(128),
-            shape: BoxShape.circle,
-          ),
-          padding: const EdgeInsets.all(12),
-          child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
-        ),
-      ],
     );
   }
 }

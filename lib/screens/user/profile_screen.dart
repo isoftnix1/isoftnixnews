@@ -230,6 +230,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () async {
                   await context.read<AuthProvider>().logout();
                   if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Logged out successfully')),
+                    );
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       AppRoutes.login,

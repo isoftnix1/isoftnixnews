@@ -127,9 +127,14 @@ class AppDrawer extends StatelessWidget {
                     title: AppLocalizations.of(context, 'logout'),
                     textColor: Colors.redAccent,
                     iconColor: Colors.redAccent,
-                    onTap: () {
-                      authProvider.logout();
-                      Navigator.pushReplacementNamed(context, AppRoutes.login);
+                    onTap: () async {
+                      await authProvider.logout();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logged out successfully')),
+                        );
+                        Navigator.pushReplacementNamed(context, AppRoutes.login);
+                      }
                     },
                   )
                 else
