@@ -301,6 +301,7 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _isMuted = false;
 
   @override
   void initState() {
@@ -311,12 +312,94 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           setState(() => _isInitialized = true);
         }
       });
+    _controller.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      _controller.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+  }
+
+  void _toggleFullscreen(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  VideoPlayer(_controller),
+                  _buildControls(isFullscreen: true),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }));
+  }
+
+  Widget _buildControls({bool isFullscreen = false}) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        if (_controller.value.isBuffering)
+          const CircularProgressIndicator(color: Colors.white),
+        if (!_controller.value.isBuffering)
+          GestureDetector(
+            onTap: () {
+              _controller.value.isPlaying ? _controller.pause() : _controller.play();
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(128),
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                _controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 48,
+              ),
+            ),
+          ),
+        Positioned(
+          bottom: 8,
+          right: 8,
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up, color: Colors.white),
+                onPressed: _toggleMute,
+              ),
+              IconButton(
+                icon: Icon(isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen, color: Colors.white),
+                onPressed: () {
+                  if (isFullscreen) {
+                    Navigator.pop(context);
+                  } else {
+                    _toggleFullscreen(context);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -337,34 +420,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               alignment: Alignment.center,
               children: [
                 VideoPlayer(_controller),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(128),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    iconSize: 48,
-                    color: Colors.white,
-                    icon: Icon(
-                      _controller.value.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _controller.value.isPlaying
-                            ? _controller.pause()
-                            : _controller.play();
-                      });
-                    },
-                  ),
-                ),
+                _buildControls(isFullscreen: false),
               ],
             ),
           ),
           VideoProgressIndicator(
             _controller,
             allowScrubbing: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
             colors: VideoProgressColors(
               playedColor: Theme.of(context).primaryColor,
               backgroundColor: Theme.of(context).colorScheme.surface,

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/news_model.dart';
 import '../../providers/news_provider.dart';
+import '../../services/media_service.dart';
 import '../user/news_details_screen.dart';
 
 class EditNewsScreen extends StatefulWidget {
@@ -103,34 +104,121 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
     }
 
     setState(() => _isSubmitting = true);
+
+    File? finalImage = _selectedImage;
+    File? finalVideo = _selectedVideo;
+
+    if (_selectedImage != null) {
+      _showProgressDialog('Optimizing image...');
+      final result = await MediaService.processImage(_selectedImage!);
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (!result.success) {
+        setState(() => _isSubmitting = false);
+        _showErrorDialog(result.errorMessage!);
+        return;
+      }
+      finalImage = result.file;
+    }
+
+    if (_selectedVideo != null) {
+      _showProgressDialog('Compressing video...', isVideo: true);
+      final result = await MediaService.processVideo(_selectedVideo!);
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (!result.success) {
+        setState(() => _isSubmitting = false);
+        _showErrorDialog(result.errorMessage!);
+        return;
+      }
+      finalVideo = result.file;
+    }
+
+    _showProgressDialog('Updating...');
     final provider = context.read<NewsProvider>();
-    await provider.updateNews(
-      NewsModel(
-        id: _news!.id,
-        title: _titleEnController.text.trim(),
-        content: _contentEnController.text.trim(),
-        titleEn: _titleEnController.text.trim(),
-        contentEn: _contentEnController.text.trim(),
-        titleHi: _titleHiController.text.trim(),
-        contentHi: _contentHiController.text.trim(),
-        titleMr: _titleMrController.text.trim(),
-        contentMr: _contentMrController.text.trim(),
-        imageUrl: _news!.imageUrl,
-        videoUrl: _news!.videoUrl,
-        categoryIds: _selectedCategoryIds,
-        sourceName: _sourceNameController.text.trim().isNotEmpty ? _sourceNameController.text.trim() : null,
-        sourceUrl: _sourceUrlController.text.trim().isNotEmpty ? _sourceUrlController.text.trim() : null,
-        authorName: _news!.authorName,
-        createdAt: _news!.createdAt,
-        updatedAt: DateTime.now(),
-      ),
-      imageFile: _selectedImage,
-      videoFile: _selectedVideo,
-    );
+    try {
+      await provider.updateNews(
+        NewsModel(
+          id: _news!.id,
+          title: _titleEnController.text.trim(),
+          content: _contentEnController.text.trim(),
+          titleEn: _titleEnController.text.trim(),
+          contentEn: _contentEnController.text.trim(),
+          titleHi: _titleHiController.text.trim(),
+          contentHi: _contentHiController.text.trim(),
+          titleMr: _titleMrController.text.trim(),
+          contentMr: _contentMrController.text.trim(),
+          imageUrl: _news!.imageUrl,
+          videoUrl: _news!.videoUrl,
+          categoryIds: _selectedCategoryIds,
+          sourceName: _sourceNameController.text.trim().isNotEmpty ? _sourceNameController.text.trim() : null,
+          sourceUrl: _sourceUrlController.text.trim().isNotEmpty ? _sourceUrlController.text.trim() : null,
+          authorName: _news!.authorName,
+          createdAt: _news!.createdAt,
+          updatedAt: DateTime.now(),
+        ),
+        imageFile: finalImage,
+        videoFile: finalVideo,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close Updating dialog
+      setState(() => _isSubmitting = false);
+      _showErrorDialog('Update failed. Please try again.');
+      return;
+    }
 
     if (!mounted) return;
+    Navigator.pop(context); // Close Updating dialog
     setState(() => _isSubmitting = false);
-    Navigator.pop(context);
+    Navigator.pop(context); // Close Edit Screen
+  }
+
+  void _showProgressDialog(String message, {bool isVideo = false}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 20),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          actions: isVideo && message.contains('Compressing')
+              ? [
+                  TextButton(
+                    onPressed: () {
+                      MediaService.cancelVideoCompression();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ]
+              : null,
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

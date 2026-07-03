@@ -3,7 +3,7 @@ const path = require('path');
 
 // ─── Limits ────────────────────────────────────────────────────────────────
 const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024;   // 5 MB
-const VIDEO_SIZE_LIMIT = 100 * 1024 * 1024; // 100 MB
+const VIDEO_SIZE_LIMIT = 15 * 1024 * 1024;  // 15 MB
 
 // ─── Allowlists ─────────────────────────────────────────────────────────────
 const ALLOWED_IMAGE_MIMES = new Set([

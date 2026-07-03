@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -239,6 +240,15 @@ class ApiService {
     final bool isCritical = method != 'GET' || path.startsWith('/auth');
 
     try {
+      if (kDebugMode) {
+        debugPrint('[API REQUEST] $method $uri');
+        if (body != null) {
+          final logBody = Map<String, dynamic>.from(body);
+          if (logBody.containsKey('password')) logBody['password'] = '***';
+          debugPrint('[API REQUEST BODY] $logBody');
+        }
+      }
+
       http.Response response;
       final requestBody = body == null ? null : jsonEncode(body);
       final headers = {
@@ -246,21 +256,35 @@ class ApiService {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       };
 
+      final timeoutDuration = const Duration(seconds: 20);
+      final startTime = DateTime.now();
+
       switch (method) {
         case 'POST':
-          response = await http.post(uri, headers: headers, body: requestBody).timeout(const Duration(seconds: 10));
+          response = await http.post(uri, headers: headers, body: requestBody).timeout(timeoutDuration);
           break;
         case 'PUT':
-          response = await http.put(uri, headers: headers, body: requestBody).timeout(const Duration(seconds: 10));
+          response = await http.put(uri, headers: headers, body: requestBody).timeout(timeoutDuration);
           break;
         case 'DELETE':
-          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          response = await http.delete(uri, headers: headers).timeout(timeoutDuration);
           break;
         case 'PATCH':
-          response = await http.patch(uri, headers: headers, body: requestBody).timeout(const Duration(seconds: 10));
+          response = await http.patch(uri, headers: headers, body: requestBody).timeout(timeoutDuration);
           break;
         default:
-          response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+          response = await http.get(uri, headers: headers).timeout(timeoutDuration);
+      }
+
+      final endTime = DateTime.now();
+      
+      if (kDebugMode) {
+        debugPrint('[API RESPONSE] $method $uri');
+        debugPrint('[API STATUS CODE] ${response.statusCode}');
+        debugPrint('[API TIME] ${endTime.difference(startTime).inMilliseconds}ms');
+        if (response.body.length < 1000) {
+          debugPrint('[API RESPONSE BODY] ${response.body}');
+        }
       }
 
       final decoded = jsonDecode(response.body);
@@ -272,13 +296,31 @@ class ApiService {
         throw Exception(message);
       }
       return decoded is Map<String, dynamic> ? decoded : {'data': decoded};
-    } on Exception {
+    } on TimeoutException catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[API ERROR] TimeoutException for $uri: $e\n$stack');
+      }
+      if (isCritical) throw Exception('The server took too long to respond. Please try again.');
+      return _fallbackResponse(path, body: body);
+    } on SocketException catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[API ERROR] SocketException for $uri: $e\n$stack');
+      }
+      if (isCritical) throw Exception('Unable to connect to server. Please check your internet connection.');
+      return _fallbackResponse(path, body: body);
+    } on Exception catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[API ERROR] Exception for $uri: $e\n$stack');
+      }
       // Rethrow for critical operations so errors surface to the UI correctly
       if (isCritical) rethrow;
       // For read-only requests fall back to cached/mock data
       return _fallbackResponse(path, body: body);
-    } catch (e) {
-      if (isCritical) throw Exception('Unable to connect to server. Please check your internet connection.');
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[API ERROR] Unknown error for $uri: $e\n$stack');
+      }
+      if (isCritical) throw Exception('Something went wrong. Please try again.');
       return _fallbackResponse(path, body: body);
     }
   }

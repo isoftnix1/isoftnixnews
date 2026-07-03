@@ -62,12 +62,16 @@ async function login(req, res, next) {
       return errorResponse(res, 400, validationError);
     }
 
+    console.time('[DB] User.findByEmail');
     const user = await User.findByEmail(req.body.email);
+    console.timeEnd('[DB] User.findByEmail');
     if (!user) {
       return errorResponse(res, 401, 'Invalid email or password');
     }
 
+    console.time('[BCRYPT] compare');
     const isPasswordValid = await bcrypt.compare(req.body.password, user.password_hash);
+    console.timeEnd('[BCRYPT] compare');
     if (!isPasswordValid) {
       return errorResponse(res, 401, 'Invalid email or password');
     }

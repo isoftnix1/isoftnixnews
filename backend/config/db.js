@@ -6,6 +6,12 @@ const pool = new Pool({
     process.env.NODE_ENV === 'production'
       ? { rejectUnauthorized: false }
       : false,
+  connectionTimeoutMillis: 20000,
+  query_timeout: 10000,
+});
+
+pool.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
 });
 
 async function initializeDatabase() {
@@ -23,8 +29,8 @@ async function initializeDatabase() {
         role VARCHAR(20) NOT NULL DEFAULT 'user',
         preferred_language VARCHAR(5) DEFAULT 'en',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS categories (
@@ -33,8 +39,8 @@ async function initializeDatabase() {
         name_hi TEXT,
         name_mr TEXT,
         slug VARCHAR(255) UNIQUE NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS news (
@@ -50,10 +56,8 @@ async function initializeDatabase() {
         category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
         author_id UUID REFERENCES users(id) ON DELETE SET NULL,
         is_published BOOLEAN NOT NULL DEFAULT TRUE,
-        source_name TEXT,
-        source_url TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS notifications (
@@ -63,48 +67,16 @@ async function initializeDatabase() {
         body TEXT NOT NULL,
         data JSONB DEFAULT '{}'::jsonb,
         is_read BOOLEAN NOT NULL DEFAULT FALSE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS device_tokens (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         token TEXT NOT NULL UNIQUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `);
-
-    // Migrate existing TIMESTAMP (WITHOUT TIME ZONE) columns to TIMESTAMPTZ.
-    // This is idempotent — running on a column already typed TIMESTAMPTZ is a no-op.
-    // Without this, the pg driver omits the UTC 'Z' marker, causing JS Date to
-    // misinterpret UTC values as local time, producing wrong timestamps in the UI.
-    await client.query(`
-      ALTER TABLE users
-        ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-        ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-      ALTER TABLE categories
-        ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-        ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-      ALTER TABLE news
-        ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-        ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-      ALTER TABLE notifications
-        ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
-
-      ALTER TABLE device_tokens
-        ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-        ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-    `);
-
-    await client.query(`
-      ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS reset_otp_hash TEXT,
-        ADD COLUMN IF NOT EXISTS reset_otp_expiry TIMESTAMPTZ,
-        ADD COLUMN IF NOT EXISTS password_reset_version INTEGER NOT NULL DEFAULT 0;
     `);
   } finally {
     client.release();

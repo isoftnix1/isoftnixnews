@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:shimmer/shimmer.dart';
+
 import '../models/news_model.dart';
 
 class NewsCard extends StatelessWidget {
@@ -40,7 +42,9 @@ class NewsCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (news.imageUrl.isNotEmpty)
+              if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
+                _buildVideoThumbnail(context)
+              else if (news.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   child: CachedNetworkImage(
@@ -48,17 +52,15 @@ class NewsCard extends StatelessWidget {
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
-
-                    progressIndicatorBuilder: (context, url, progress) {
-                      debugPrint('Loading Image:');
-                      debugPrint(url);
-                      debugPrint('${progress.downloaded}');
-
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    },
-
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Theme.of(context).colorScheme.surfaceVariant ?? Colors.grey[300]!,
+                      highlightColor: Theme.of(context).colorScheme.surface ?? Colors.grey[100]!,
+                      child: Container(
+                        height: 200,
+                        width: double.infinity,
+                        color: Colors.white,
+                      ),
+                    ),
                     errorWidget: (context, url, error) {
                       return Container(
                         height: 200,
@@ -173,6 +175,63 @@ class NewsCard extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+
+  String _getVideoThumbnailUrl(String videoUrl) {
+    if (videoUrl.isEmpty) return '';
+    if (videoUrl.contains('cloudinary.com')) {
+      final lastDotIndex = videoUrl.lastIndexOf('.');
+      if (lastDotIndex != -1) {
+         return '${videoUrl.substring(0, lastDotIndex)}.jpg';
+      }
+    }
+    return '';
+  }
+
+  Widget _buildVideoThumbnail(BuildContext context) {
+    final thumbnailUrl = _getVideoThumbnailUrl(news.videoUrl!);
+    final fallbackUrl = news.imageUrl.isNotEmpty ? news.imageUrl : thumbnailUrl;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: CachedNetworkImage(
+            imageUrl: fallbackUrl.trim(),
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Shimmer.fromColors(
+              baseColor: Theme.of(context).colorScheme.surfaceVariant ?? Colors.grey[300]!,
+              highlightColor: Theme.of(context).colorScheme.surface ?? Colors.grey[100]!,
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                color: Colors.white,
+              ),
+            ),
+            errorWidget: (context, url, error) {
+              return Container(
+                height: 200,
+                color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ?? Colors.grey.withValues(alpha: 0.1),
+                child: Center(
+                  child: Icon(Icons.videocam_off, color: Colors.grey.withValues(alpha: 0.5), size: 40),
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(128),
+            shape: BoxShape.circle,
+          ),
+          padding: const EdgeInsets.all(12),
+          child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
+        ),
+      ],
     );
   }
 }

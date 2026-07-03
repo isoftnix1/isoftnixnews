@@ -137,7 +137,18 @@ async function createNews(req, res, next) {
 
     // ── Per-type size enforcement ────────────────────────────────────────────
     if (imageFile && imageFile.size > upload.IMAGE_SIZE_LIMIT) {
-      return errorResponse(res, 400, `Image file too large. Maximum allowed size is ${upload.IMAGE_SIZE_LIMIT / (1024 * 1024)} MB`);
+      return res.status(400).json({
+        success: false,
+        message: "Image exceeds maximum allowed size.",
+        maxSize: "5 MB"
+      });
+    }
+    if (videoFile && videoFile.size > upload.VIDEO_SIZE_LIMIT) {
+      return res.status(400).json({
+        success: false,
+        message: "Video exceeds maximum allowed size.",
+        maxSize: "15 MB"
+      });
     }
 
     // ── Magic-byte validation (must run before Cloudinary) ───────────────────
@@ -235,7 +246,18 @@ async function updateNews(req, res, next) {
 
     // ── Per-type size enforcement ────────────────────────────────────────────
     if (imageFile && imageFile.size > upload.IMAGE_SIZE_LIMIT) {
-      return errorResponse(res, 400, `Image file too large. Maximum allowed size is ${upload.IMAGE_SIZE_LIMIT / (1024 * 1024)} MB`);
+      return res.status(400).json({
+        success: false,
+        message: "Image exceeds maximum allowed size.",
+        maxSize: "5 MB"
+      });
+    }
+    if (videoFile && videoFile.size > upload.VIDEO_SIZE_LIMIT) {
+      return res.status(400).json({
+        success: false,
+        message: "Video exceeds maximum allowed size.",
+        maxSize: "15 MB"
+      });
     }
 
     // ── Magic-byte validation (must run before Cloudinary) ───────────────────
