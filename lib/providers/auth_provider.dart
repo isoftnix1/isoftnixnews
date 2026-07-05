@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -36,9 +39,22 @@ class AuthProvider extends ChangeNotifier {
       _user = user;
       _registerFcmToken();
       return true;
+    } on SocketException {
+      // Network is unreachable — the stored token is still valid.
+      // Do NOT delete it; the user will auto-login successfully next launch.
+      ApiService.authToken = null;
+      _user = null;
+      return false;
+    } on TimeoutException {
+      // Server took too long — same treatment as no network.
+      // Token is preserved for the next attempt.
+      ApiService.authToken = null;
+      _user = null;
+      return false;
     } catch (e) {
+      // Any other error (401 expired, 403 deactivated, malformed response)
+      // means the token is genuinely invalid — delete it.
       _errorMessage = e.toString();
-      // Clear token if token is invalid or request failed
       await _storage.delete(key: 'auth_token');
       ApiService.authToken = null;
       _user = null;

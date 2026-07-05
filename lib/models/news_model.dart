@@ -19,6 +19,9 @@ class NewsModel {
   final String? sourceName;
   final String? sourceUrl;
   final bool isPublished;
+  final int viewsCount;
+  final int reminderSentCount;
+  final String reminderStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -43,6 +46,9 @@ class NewsModel {
     this.sourceName,
     this.sourceUrl,
     this.isPublished = true,
+    this.viewsCount = 0,
+    this.reminderSentCount = 0,
+    this.reminderStatus = 'pending',
     this.createdAt,
     this.updatedAt,
   });
@@ -77,6 +83,9 @@ class NewsModel {
           : (json['isPublished'] is bool
               ? json['isPublished']
               : (json['is_published']?.toString() == 'true' || json['isPublished']?.toString() == 'true')),
+      viewsCount: json['views_count'] ?? json['viewsCount'] ?? 0,
+      reminderSentCount: json['reminder_sent_count'] ?? json['reminderSentCount'] ?? 0,
+      reminderStatus: json['reminder_status'] ?? json['reminderStatus'] ?? 'pending',
       createdAt: json['created_at'] != null 
           ? DateTime.tryParse(json['created_at'].toString()) 
           : (json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null),
@@ -115,6 +124,12 @@ class NewsModel {
       'sourceUrl': sourceUrl,
       'is_published': isPublished,
       'isPublished': isPublished,
+      'views_count': viewsCount,
+      'viewsCount': viewsCount,
+      'reminder_sent_count': reminderSentCount,
+      'reminderSentCount': reminderSentCount,
+      'reminder_status': reminderStatus,
+      'reminderStatus': reminderStatus,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -141,6 +156,9 @@ class NewsModel {
     String? sourceName,
     String? sourceUrl,
     bool? isPublished,
+    int? viewsCount,
+    int? reminderSentCount,
+    String? reminderStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -165,6 +183,9 @@ class NewsModel {
       sourceName: sourceName ?? this.sourceName,
       sourceUrl: sourceUrl ?? this.sourceUrl,
       isPublished: isPublished ?? this.isPublished,
+      viewsCount: viewsCount ?? this.viewsCount,
+      reminderSentCount: reminderSentCount ?? this.reminderSentCount,
+      reminderStatus: reminderStatus ?? this.reminderStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

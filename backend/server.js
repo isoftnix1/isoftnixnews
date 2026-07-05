@@ -13,7 +13,9 @@ const authRoutes = require('./routes/authRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const schedulerRoutes = require('./routes/schedulerRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
+const { initScheduler } = require('./services/reminderScheduler');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -123,6 +125,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/scheduler', schedulerRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
@@ -130,6 +133,11 @@ app.use(errorMiddleware);
 async function startServer() {
   try {
     await initializeDatabase();
+    
+    // Initialize scheduled tasks
+    if (process.env.NODE_ENV !== 'test') {
+      initScheduler();
+    }
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

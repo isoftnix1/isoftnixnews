@@ -29,9 +29,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint('📹 [CACHE HIT] VideoPlayer loading local file: ${widget.url}');
         _controller = VideoPlayerController.file(fileInfo.file);
       } else {
-        debugPrint('☁️ [NETWORK] VideoPlayer streaming & caching: ${widget.url}');
+        debugPrint('☁️ [NETWORK] VideoPlayer streaming (no background download): ${widget.url}');
         _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
-        DefaultCacheManager().downloadFile(widget.url).catchError((_) => fileInfo);
+        // Removed downloadFile() here to prevent double bandwidth usage.
+        // It relies on ExoPlayer/AVPlayer's internal stream buffer.
       }
       
       await _controller!.initialize();

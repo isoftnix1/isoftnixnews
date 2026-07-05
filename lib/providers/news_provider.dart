@@ -107,6 +107,14 @@ class NewsProvider extends ChangeNotifier {
     return _apiService.getNewsById(id, lang: lang);
   }
 
+  Future<void> recordNewsView(String newsId) async {
+    await _apiService.recordNewsView(newsId);
+  }
+
+  Future<Map<String, dynamic>> fetchNewsAnalytics(String newsId) async {
+    return await _apiService.getNewsAnalytics(newsId);
+  }
+
   Future<void> addNews(NewsModel news, {File? imageFile, File? videoFile}) async {
     _isLoadingNews = true;
     notifyListeners();

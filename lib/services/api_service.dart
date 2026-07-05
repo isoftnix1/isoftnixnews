@@ -160,6 +160,21 @@ class ApiService {
     return true;
   }
 
+  Future<bool> recordNewsView(String id) async {
+    try {
+      await _request('/news/$id/view', method: 'POST');
+      return true;
+    } catch (e) {
+      debugPrint('Failed to record news view: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> getNewsAnalytics(String id) async {
+    final response = await _request('/news/$id/analytics');
+    return response['data'] as Map<String, dynamic>? ?? {};
+  }
+
   Future<UserModel> getProfile() async {
     final response = await _request('/auth/me');
     return UserModel.fromJson(response['data']['user']);

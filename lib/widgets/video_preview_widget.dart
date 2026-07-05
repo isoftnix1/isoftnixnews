@@ -55,10 +55,11 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         debugPrint('📹 [CACHE HIT] VideoPreview loading local file: ${widget.url}');
         _controller = VideoPlayerController.file(fileInfo.file);
       } else {
-        debugPrint('☁️ [NETWORK] VideoPreview streaming & caching: ${widget.url}');
-        _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
-        // Silently cache for future scroll loops
-        DefaultCacheManager().downloadFile(widget.url).catchError((_) => fileInfo);
+        debugPrint('☁️ [NETWORK] VideoPreview caching file first: ${widget.url}');
+        // By downloading the file first, we prevent double bandwidth usage. 
+        // The Cloudinary thumbnail provides immediate visual feedback while it downloads.
+        final file = await DefaultCacheManager().getSingleFile(widget.url);
+        _controller = VideoPlayerController.file(file);
       }
       
       await _controller!.initialize();

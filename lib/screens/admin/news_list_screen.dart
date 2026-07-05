@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/news_model.dart';
 import '../../providers/news_provider.dart';
 import '../../routes/app_routes.dart';
+import 'news_analytics_dialog.dart';
 
 class NewsListScreen extends StatefulWidget {
   const NewsListScreen({super.key});
@@ -405,8 +406,35 @@ class _NewsItemTile extends StatelessWidget {
                         ],
                 ),
               ),
-              if (dateTime.isNotEmpty) ...[
-                const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.visibility, size: 14, color: Colors.blueGrey),
+              const SizedBox(width: 4),
+              Text('${news.viewsCount} Viewed', style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 12),
+              Icon(
+                news.reminderStatus == 'completed' ? Icons.check_circle : Icons.schedule,
+                size: 14,
+                color: news.reminderStatus == 'completed' ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                news.reminderStatus == 'completed' ? '${news.reminderSentCount} Reminders' : 'Pending',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: news.reminderStatus == 'completed' ? Colors.green : Colors.orange,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          if (dateTime.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
                 Icon(Icons.schedule, size: 12, color: Colors.grey.shade500),
                 const SizedBox(width: 3),
                 Text(
@@ -414,14 +442,16 @@ class _NewsItemTile extends StatelessWidget {
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
-            ],
-          ),
+            ),
+          ],
         ],
       ),
       isThreeLine: dateTime.isNotEmpty,
       trailing: PopupMenuButton<String>(
         onSelected: (value) async {
-          if (value == 'edit') {
+          if (value == 'analytics') {
+            await NewsAnalyticsDialog.show(context, news);
+          } else if (value == 'edit') {
             await Navigator.pushNamed(
               context,
               AppRoutes.editNews,
@@ -433,6 +463,7 @@ class _NewsItemTile extends StatelessWidget {
           }
         },
         itemBuilder: (_) => const [
+          PopupMenuItem(value: 'analytics', child: Text('Analytics')),
           PopupMenuItem(value: 'edit', child: Text('Edit')),
           PopupMenuItem(value: 'delete', child: Text('Delete')),
         ],

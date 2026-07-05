@@ -33,7 +33,11 @@ class PushNotificationService {
     _deepLinkService = deepLinkService;
 
     const androidSettings = AndroidInitializationSettings(_colorIcon);
-    const initSettings = InitializationSettings(android: androidSettings);
+    const iosSettings = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
 
     await _localNotifications.initialize(
       initSettings,

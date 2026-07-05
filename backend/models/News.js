@@ -52,6 +52,10 @@ async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = nul
       n.source_name,
       n.source_url,
       n.is_published,
+      n.views_count,
+      n.reminder_status,
+      n.reminder_sent_count,
+      n.published_at,
       n.created_at,
       n.updated_at,
       c.id AS category_id,
@@ -108,6 +112,10 @@ async function getNewsById(id, { publishedOnly = false } = {}) {
       n.source_name,
       n.source_url,
       n.is_published,
+      n.views_count,
+      n.reminder_status,
+      n.reminder_sent_count,
+      n.published_at,
       n.created_at,
       n.updated_at,
       c.id AS category_id,
@@ -140,8 +148,8 @@ async function createNews({ title_en, content_en, title_hi, content_hi, title_mr
     await client.query('BEGIN');
     
     const result = await client.query(
-      `INSERT INTO news (id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, author_id, category_id, image_url, video_url, source_name, source_url, is_published)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      `INSERT INTO news (id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, author_id, category_id, image_url, video_url, source_name, source_url, is_published, published_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CASE WHEN $14 = TRUE THEN NOW() ELSE NULL END)
        RETURNING *`,
       [id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, authorId, primaryCategoryId, imageUrl, videoUrl, source_name, source_url, isPublished]
     );
@@ -180,6 +188,10 @@ async function updateNews(id, updates, categoryIds = null) {
 
     let updatedNews = null;
     if (fields.length > 0) {
+      if (updates.is_published === true && !updates.published_at) {
+        fields.push(`published_at = COALESCE(published_at, NOW())`);
+      }
+      
       const values = [id, ...Object.values(updates).filter((value) => value !== undefined)];
       const result = await client.query(
         `UPDATE news SET ${fields.join(', ')} WHERE id = $1 RETURNING *`,

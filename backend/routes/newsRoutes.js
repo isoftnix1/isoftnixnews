@@ -13,13 +13,19 @@ const upload = require('../middleware/uploadMiddleware');
 const validate = require('../middleware/validateRequest');
 const schemas = require('../utils/schemas');
 
+const { recordNewsView, getNewsAnalytics } = require('../controllers/newsController');
+
 const router = express.Router();
 
 // Public routes (optional auth allows admins to include drafts)
 router.get('/', optionalAuthMiddleware, validate(schemas.newsQuery, 'query'), listNews);
 router.get('/:id', optionalAuthMiddleware, validate(schemas.uuidParam, 'params'), getNewsByIdController);
 
+// Authenticated user routes
+router.post('/:id/view', authMiddleware, validate(schemas.uuidParam, 'params'), recordNewsView);
+
 // Admin-only routes
+router.get('/:id/analytics', authMiddleware, adminMiddleware, validate(schemas.uuidParam, 'params'), getNewsAnalytics);
 router.post(
   '/',
   authMiddleware,

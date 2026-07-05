@@ -41,6 +41,9 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
     super.initState();
     if (widget.news != null) {
       _news = widget.news;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<NewsProvider>().recordNewsView(widget.news!.id);
+      });
     } else if (widget.newsId != null) {
       _loadNewsById(widget.newsId!);
     }
@@ -76,6 +79,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
           _news = news;
           _isLoading = false;
         });
+        context.read<NewsProvider>().recordNewsView(id);
       }
     } catch (e) {
       if (mounted) {
@@ -87,7 +91,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
     }
   }
 
-  String _buildDeepLink(String newsId) => 'isoftnixnews://news/$newsId';
+  String _buildDeepLink(String newsId) => 'updates://news/$newsId';
 
   String _buildShareText(NewsModel news) {
     final preview = news.content.length > 150

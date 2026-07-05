@@ -66,7 +66,15 @@ class _ExternalArticleScreenState extends State<ExternalArticleScreen> {
             }
           },
           onNavigationRequest: (request) {
-            // Allow all navigations – article pages may redirect through CDNs
+            // Block javascript: URIs and unrecognised schemes.
+            // All http / https navigations (including CDN redirects) are allowed
+            // so existing article functionality is fully preserved.
+            final uri = Uri.tryParse(request.url);
+            if (uri == null) return NavigationDecision.prevent;
+            final scheme = uri.scheme.toLowerCase();
+            if (scheme != 'https' && scheme != 'http') {
+              return NavigationDecision.prevent;
+            }
             return NavigationDecision.navigate;
           },
         ),

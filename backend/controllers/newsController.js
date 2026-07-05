@@ -8,6 +8,7 @@ const { getTokensGroupedByLanguage, createNotification } = require('../models/No
 const User = require('../models/User');
 const { validateFileSignature } = require('../utils/validateFileType');
 const upload = require('../middleware/uploadMiddleware');
+const { pool } = require('../config/db');
 
 function isUuid(str) {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
@@ -351,10 +352,78 @@ async function deleteNews(req, res, next) {
   }
 }
 
+async function recordNewsView(req, res, next) {
+  try {
+    const newsId = req.params.id;
+    const userId = req.user.id;
+
+    if (!isUuid(newsId)) return errorResponse(res, 400, 'Invalid article ID format');
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const insertResult = await client.query(
+        `INSERT INTO news_views (user_id, news_id) 
+         VALUES ($1, $2) 
+         ON CONFLICT (user_id, news_id) DO NOTHING`,
+        [userId, newsId]
+      );
+      
+      if (insertResult.rowCount > 0) {
+        await client.query(
+          `UPDATE news SET views_count = views_count + 1 WHERE id = $1`,
+          [newsId]
+        );
+      }
+      
+      await client.query('COMMIT');
+      return successResponse(res, 200, null, 'View recorded');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getNewsAnalytics(req, res, next) {
+  try {
+    const newsId = req.params.id;
+    if (!isUuid(newsId)) return errorResponse(res, 400, 'Invalid article ID format');
+
+    const news = await News.getNewsById(newsId);
+    if (!news) return errorResponse(res, 404, 'News not found');
+
+    const usersResult = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_active = true');
+    const totalUsers = parseInt(usersResult.rows[0].count, 10);
+    const viewedUsers = news.views_count || 0;
+    const notViewedUsers = Math.max(0, totalUsers - viewedUsers);
+    const viewPercentage = totalUsers > 0 ? ((viewedUsers / totalUsers) * 100).toFixed(1) : '0.0';
+
+    return successResponse(res, 200, {
+      totalUsers,
+      viewedUsers,
+      notViewedUsers,
+      viewPercentage,
+      reminderStatus: news.reminder_status,
+      reminderSent: news.reminder_sent_count || 0,
+      publishedAt: news.published_at || news.created_at,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listNews,
   getNewsByIdController,
   createNews,
   updateNews,
   deleteNews,
+  recordNewsView,
+  getNewsAnalytics,
 };

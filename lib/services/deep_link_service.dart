@@ -8,11 +8,11 @@ import 'api_service.dart';
 
 /// Service responsible for handling all deep links in the Updates app.
 ///
-/// Deep link format: isoftnixnews://news/{uuid}
-///
-/// This service is designed to be forward-compatible with:
-/// - Android App Links (https://isoftnixnews.com/news/{uuid})
-/// - iOS Universal Links (https://isoftnixnews.com/news/{uuid})
+/// Deep link format: updates://news/{uuid}
+/// 
+/// Also handles standard http/https links if configured:
+/// - Android App Links (https://updates.com/news/{uuid})
+/// - iOS Universal Links (https://updates.com/news/{uuid})
 ///
 /// To upgrade to App Links/Universal Links in the future, simply add an
 /// https-scheme data tag to the AndroidManifest intent filter and handle
@@ -33,7 +33,7 @@ class DeepLinkService {
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        _handleUri(initialUri);
+        _handleDeepLink(initialUri);
       }
     } catch (e) {
       // Ignore initial link error
@@ -41,7 +41,7 @@ class DeepLinkService {
 
     // Handle incoming links while app is in foreground/background
     _linkSubscription = _appLinks.uriLinkStream.listen(
-      _handleUri,
+      _handleDeepLink,
       onError: (err) {
         // Ignore stream error
       },
@@ -49,12 +49,11 @@ class DeepLinkService {
   }
 
   /// Parses the incoming URI and routes to the correct screen.
-  ///
-  /// Supports:
-  /// - isoftnixnews://news/{uuid}
-  void _handleUri(Uri uri) {
-    // Validate scheme
-    if (uri.scheme != 'isoftnixnews') {
+  /// Expected formats:
+  /// - updates://news/{uuid}
+  /// - https://updates.com/news/{uuid}
+  Future<void> _handleDeepLink(Uri uri) async {
+    if (uri.scheme != 'updates' && uri.scheme != 'https' && uri.scheme != 'http') {
       return;
     }
 
