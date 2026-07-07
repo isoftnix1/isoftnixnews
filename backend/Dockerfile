@@ -26,6 +26,9 @@ EXPOSE 5000
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
+# Create the security directory and give ownership to the node user
+RUN mkdir -p /app/security/admin_devices && chown -R node:node /app
+
 # Run as non-root user
 USER node
 
