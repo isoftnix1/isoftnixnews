@@ -13,6 +13,7 @@ import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/deep_link_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/device_service.dart';
 import 'theme/app_theme.dart';
 
 /// Global navigator key used by [DeepLinkService] to navigate
@@ -46,12 +47,13 @@ class ISoftNixNewsApp extends StatefulWidget {
   State<ISoftNixNewsApp> createState() => _ISoftNixNewsAppState();
 }
 
-class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> {
+class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> with WidgetsBindingObserver {
   late final DeepLinkService _deepLinkService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _deepLinkService = DeepLinkService(navigatorKey: widget.navigatorKey);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _deepLinkService.init();
@@ -59,13 +61,24 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> {
         deepLinkService: _deepLinkService,
       );
       await PushNotificationService.instance.setupInteractedMessage();
+      
+      // Trigger initial heartbeat
+      DeviceService().sendHeartbeat();
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _deepLinkService.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      DeviceService().sendHeartbeat();
+    }
   }
 
   @override

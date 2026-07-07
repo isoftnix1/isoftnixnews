@@ -126,7 +126,11 @@ async function createNews(req, res, next) {
     const validationError = validateNewsInput(req.body);
     if (validationError) return errorResponse(res, 400, validationError);
 
-    const categoryIds = req.body.categoryIds;
+    let categoryIds = req.body.categoryIds;
+    if (typeof categoryIds === 'string') {
+      categoryIds = [categoryIds];
+      req.body.categoryIds = categoryIds;
+    }
     // Just verify the primary category exists for validation
     if (categoryIds && categoryIds.length > 0) {
       const category = await Category.getCategoryById(categoryIds[0]);
@@ -230,7 +234,7 @@ async function createNews(req, res, next) {
       )
     );
 
-    return successResponse(res, 201, savedNews, 'News created successfully');
+    return successResponse(res, 201, savedNews, `News created and notifications sent to ${allUsers.length} users!`);
   } catch (error) {
     return next(error);
   }

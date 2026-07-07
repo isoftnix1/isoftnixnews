@@ -12,6 +12,7 @@ import '../../widgets/category_chip.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/corn_loader/corn_loader.dart';
 import 'external_article_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -120,8 +121,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final newsProvider = context.watch<NewsProvider>();
     context.watch<AuthProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor, // Fallback
+        image: const DecorationImage(
+          image: AssetImage('assets/images/background.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
 
         leadingWidth: 150, // <-- ADD IT HERE
 
@@ -220,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           return const Padding(
                             padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(child: CornLoader(size: 48)),
                           );
                         }
 
@@ -239,6 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     builder: (_) => ExternalArticleScreen(
                                       title: item.title,
                                       url: sourceUrl,
+                                      newsId: item.id,
                                     ),
                                   ),
                                 );
@@ -260,6 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+      ),
       ),
     );
   }

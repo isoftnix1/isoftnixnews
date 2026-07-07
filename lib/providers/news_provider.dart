@@ -204,13 +204,13 @@ class NewsProvider extends ChangeNotifier {
   Future<void> setDateFilter(DateTime start, DateTime end) async {
     _selectedStartDate = start;
     _selectedEndDate = end;
-    await loadNews(refresh: true, limit: 1000);
+    await loadNews(refresh: true);
   }
 
   /// Clear the date filter and reload all news.
   Future<void> clearDateFilter() async {
     _selectedStartDate = null;
     _selectedEndDate = null;
-    await loadNews(refresh: true, limit: 1000);
+    await loadNews(refresh: true);
   }
 }

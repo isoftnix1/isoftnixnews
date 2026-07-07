@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/corn_loader/corn_loader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -114,16 +115,11 @@ class _SplashScreenState extends State<SplashScreen> {
             left: 0,
             right: 0,
             bottom: 48,
-            child: Center(
+            child: const Center(
               child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    const Color(0xFFE64A19).withAlpha(180),
-                  ),
-                ),
+                width: 80,
+                height: 80,
+                child: CornLoader(size: 80),
               ),
             ),
           ),

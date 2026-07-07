@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../../providers/news_provider.dart';
 
 class ExternalArticleScreen extends StatefulWidget {
   final String title;
   final String url;
+  final String? newsId;
 
   const ExternalArticleScreen({
     super.key,
     required this.title,
     required this.url,
+    this.newsId,
   });
 
   @override
@@ -30,6 +34,11 @@ class _ExternalArticleScreenState extends State<ExternalArticleScreen> {
   void initState() {
     super.initState();
     _initWebView();
+    if (widget.newsId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<NewsProvider>().recordNewsView(widget.newsId!);
+      });
+    }
   }
 
   void _initWebView() {

@@ -1,5 +1,6 @@
 const admin = require('../config/firebase');
 const { getMessaging } = require('firebase-admin/messaging');
+const deviceService = require('./deviceService');
 
 const ANDROID_CHANNEL_ID = 'updates_channel';
 const ANDROID_NOTIFICATION_ICON = 'ic_notification';
@@ -36,6 +37,20 @@ async function sendNotificationToTokens(tokens, title, body, data = {}) {
 
   try {
     const response = await getMessaging().sendEachForMulticast(message);
+    
+    // Async background task — handle token failures and uninstalls
+    deviceService.handleFCMResponse(response, cleanTokens).catch(err => {
+      console.error('[NotificationService] Error handling FCM response in deviceService:', err);
+    });
+
+    // Async background task — update last_notification_sent_at
+    if (response.successCount > 0) {
+      const successfulTokens = cleanTokens.filter((_, idx) => response.responses[idx].success);
+      deviceService.recordNotificationSent(successfulTokens).catch(err => {
+        console.error('[NotificationService] Error recording notification sent in deviceService:', err);
+      });
+    }
+
     return {
       successCount: response.successCount,
       failureCount: response.failureCount,

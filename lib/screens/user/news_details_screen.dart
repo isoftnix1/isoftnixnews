@@ -9,6 +9,7 @@ import '../../models/news_model.dart';
 import '../../providers/language_provider.dart';
 import '../../providers/news_provider.dart';
 import '../../widgets/video_player_widget.dart';
+import '../../widgets/corn_loader/corn_loader.dart';
 import 'external_article_screen.dart';
 
 class NewsDetailsScreen extends StatefulWidget {
@@ -113,7 +114,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Loading Article...')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: CornLoader(size: 80)),
       );
     }
 
@@ -150,15 +151,19 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
 
     final news = _news!;
     final date = news.createdAt ?? DateTime.now();
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
 
     return Scaffold(
+      backgroundColor: bgColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: news.imageUrl.isNotEmpty ? 400 : null,
             pinned: true,
             stretch: news.imageUrl.isNotEmpty,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            backgroundColor: bgColor,
             flexibleSpace: news.imageUrl.isNotEmpty
                 ? FlexibleSpaceBar(
                     stretchModes: const [StretchMode.zoomBackground],
@@ -169,7 +174,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                           imageUrl: _optimizeCloudinaryUrl(news.imageUrl),
                           fit: BoxFit.cover,
                           placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
+                              const Center(child: CornLoader(size: 48)),
                           errorWidget: (context, url, error) =>
                               Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
                         ),
@@ -181,8 +186,8 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Theme.of(context).scaffoldBackgroundColor.withAlpha(128),
-                                Theme.of(context).scaffoldBackgroundColor,
+                                bgColor.withAlpha(128),
+                                bgColor,
                               ],
                             ),
                           ),

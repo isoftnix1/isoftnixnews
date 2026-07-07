@@ -196,6 +196,27 @@ const uuidParam = Joi.object({
 });
 
 // ─────────────────────────────────────────────
+// Device schemas
+// ─────────────────────────────────────────────
+
+const registerDeviceSchema = Joi.object({
+  fcm_token: Joi.string().trim().required().messages({ 'string.empty': 'FCM token is required' }),
+  device_id: Joi.string().trim().required().messages({ 'string.empty': 'Device ID is required' }),
+  device_name: Joi.string().trim().optional().allow('', null),
+  manufacturer: Joi.string().trim().optional().allow('', null),
+  model: Joi.string().trim().optional().allow('', null),
+  platform: Joi.string().trim().required(),
+  os_version: Joi.string().trim().optional().allow('', null),
+  app_version: Joi.string().trim().optional().allow('', null),
+});
+
+const heartbeatSchema = Joi.object({
+  device_id: Joi.string().trim().required().messages({ 'string.empty': 'Device ID is required' }),
+  app_version: Joi.string().trim().optional().allow('', null),
+  os_version: Joi.string().trim().optional().allow('', null),
+});
+
+// ─────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────
 
@@ -211,4 +232,6 @@ module.exports = {
   newsQuery,
   createCategory,
   uuidParam,
+  registerDeviceSchema,
+  heartbeatSchema,
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import 'corn_loader/corn_loader.dart';
 
 class LoadingWidget extends StatelessWidget {
   final String? message;
@@ -12,8 +13,8 @@ class LoadingWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 12),
+          const CornLoader(size: 80),
+          const SizedBox(height: 16),
           Text(message ?? AppLocalizations.of(context, 'loading')),
         ],
       ),

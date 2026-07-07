@@ -4,6 +4,7 @@ import '../screens/admin/add_news_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/admin/admin_login_screen.dart';
 import '../screens/admin/category_management_screen.dart';
+import '../screens/admin/device_management_screen.dart';
 import '../screens/admin/edit_news_screen.dart';
 import '../screens/admin/news_list_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
@@ -41,6 +42,7 @@ class AppRoutes {
   static const String addNews = '/add-news';
   static const String editNews = '/edit-news';
   static const String manageCategories = '/manage-categories';
+  static const String deviceManagement = '/device-management';
   static const String externalArticle = '/external-article';
 
   /// Static routes for simple navigation without arguments.
@@ -60,6 +62,7 @@ class AppRoutes {
     addNews: (context) => const AddNewsScreen(),
     editNews: (context) => const EditNewsScreen(),
     manageCategories: (context) => const CategoryManagementScreen(),
+    deviceManagement: (context) => const DeviceManagementScreen(),
   };
 
   /// Dynamic route generator to handle:

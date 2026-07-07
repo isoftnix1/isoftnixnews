@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/user_model.dart';
 import '../services/api_service.dart';
+import '../services/device_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -221,10 +221,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _registerFcmToken() async {
     try {
-      final token = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 5));
-      if (token != null) {
-        await _apiService.registerDeviceToken(token);
-      }
+      await DeviceService().registerDevice();
     } catch (e) {
       // Ignore token generation failure in production
     }

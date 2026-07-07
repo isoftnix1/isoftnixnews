@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'deep_link_service.dart';
+import 'device_service.dart';
 
 /// Centralizes FCM + local notification setup for Android (and iOS basics).
 class PushNotificationService {
@@ -58,6 +59,10 @@ class PushNotificationService {
     );
 
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+      DeviceService().registerDevice();
+    });
 
     _initialized = true;
   }

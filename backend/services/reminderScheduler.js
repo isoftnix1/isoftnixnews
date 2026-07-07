@@ -39,6 +39,17 @@ function initScheduler() {
       }
     }
   });
+
+  // Daily cleanup job at 3:00 AM
+  cron.schedule('0 3 * * *', async () => {
+    try {
+      const deviceService = require('./deviceService');
+      const stats = await deviceService.cleanupStaleTokens();
+      console.log(`[Scheduler] Daily device cleanup complete. Inactive: ${stats.markedInactive}, Invalid deleted: ${stats.deletedInvalid}`);
+    } catch (error) {
+      console.error('[Scheduler] Error in daily device cleanup:', error);
+    }
+  });
 }
 
 module.exports = {

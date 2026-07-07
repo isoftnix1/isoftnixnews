@@ -14,6 +14,7 @@ const newsRoutes = require('./routes/newsRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const schedulerRoutes = require('./routes/schedulerRoutes');
+const deviceRoutes = require('./routes/deviceRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
 const { initScheduler } = require('./services/reminderScheduler');
 
@@ -126,6 +127,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/scheduler', schedulerRoutes);
+app.use('/api/device', deviceRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

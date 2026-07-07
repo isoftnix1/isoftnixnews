@@ -14,19 +14,30 @@ async function registerDeviceToken({ userId, token }) {
 
 async function getTokensForUser(userId) {
   const result = await pool.query(
-    'SELECT token FROM device_tokens WHERE user_id = $1',
+    `SELECT fcm_token as token FROM user_devices WHERE user_id = $1 AND notification_status = 'active'
+     UNION
+     SELECT token FROM device_tokens WHERE user_id = $1`,
     [userId]
   );
   return result.rows.map((row) => row.token);
 }
 
 async function getAllTokens() {
-  const result = await pool.query('SELECT token FROM device_tokens');
+  const result = await pool.query(`
+    SELECT fcm_token as token FROM user_devices WHERE notification_status = 'active'
+    UNION
+    SELECT token FROM device_tokens
+  `);
   return result.rows.map((row) => row.token);
 }
 
 async function getTokensGroupedByLanguage() {
   const result = await pool.query(`
+    SELECT dt.fcm_token as token, COALESCE(u.preferred_language, 'en') as lang
+    FROM user_devices dt
+    LEFT JOIN users u ON dt.user_id = u.id
+    WHERE dt.notification_status = 'active'
+    UNION
     SELECT dt.token, COALESCE(u.preferred_language, 'en') as lang
     FROM device_tokens dt
     LEFT JOIN users u ON dt.user_id = u.id

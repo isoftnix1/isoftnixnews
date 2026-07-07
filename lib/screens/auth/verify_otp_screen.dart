@@ -72,6 +72,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(title: const Text('Verify OTP')),
       body: SafeArea(
         child: Center(
@@ -160,3 +161,4 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     );
   }
 }
+

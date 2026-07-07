@@ -186,14 +186,78 @@ class ApiService {
     return list.map((e) => NotificationModel.fromJson(e)).toList();
   }
 
-  Future<bool> registerDeviceToken(String token) async {
-    await _request(
-      '/notifications/register-token',
-      method: 'POST',
-      body: {'token': token},
-    );
-    return true;
+  // ---------------------------------------------------------
+  // Notifications
+  // ---------------------------------------------------------
+
+  Future<void> registerDeviceToken(String token) async {
+    try {
+      await _request(
+        '/notifications/register-token',
+        method: 'POST',
+        body: {'token': token},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to register device token: $e');
+      }
+    }
   }
+
+  // ---------------------------------------------------------
+  // Device Lifecycle
+  // ---------------------------------------------------------
+
+  Future<void> registerDevice(Map<String, dynamic> deviceData) async {
+    try {
+      await _request(
+        '/device/register',
+        method: 'POST',
+        body: deviceData,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to register device: $e');
+      }
+    }
+  }
+
+  Future<void> heartbeat(String deviceId, String? appVersion, String? osVersion) async {
+    try {
+      final body = <String, dynamic>{'device_id': deviceId};
+      if (appVersion != null) body['app_version'] = appVersion;
+      if (osVersion != null) body['os_version'] = osVersion;
+
+      await _request(
+        '/device/heartbeat',
+        method: 'POST',
+        body: body,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to send heartbeat: $e');
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAdminDeviceList({String? status, String? platform}) async {
+    final queryParams = <String>[];
+    if (status != null && status != 'All') queryParams.add('status=$status');
+    if (platform != null && platform != 'All') queryParams.add('platform=$platform');
+    
+    final queryStr = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+    final response = await _request('/device/list$queryStr');
+    return List<Map<String, dynamic>>.from(response['data'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getAdminDeviceAnalytics() async {
+    final response = await _request('/device/analytics');
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  // ---------------------------------------------------------
+  // Internal request helpers
+  // ---------------------------------------------------------
 
   Future<UserModel> updateProfile({String? name, String? phone}) async {
     final body = <String, dynamic>{};
@@ -252,7 +316,6 @@ class ApiService {
     );
 
     // Auth and write operations must never silently fall back to mock data
-    final bool isCritical = method != 'GET' || path.startsWith('/auth');
 
     try {
       if (kDebugMode) {
@@ -271,7 +334,7 @@ class ApiService {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       };
 
-      final timeoutDuration = const Duration(seconds: 20);
+      final timeoutDuration = const Duration(seconds: 60);
       final startTime = DateTime.now();
 
       switch (method) {
@@ -315,28 +378,22 @@ class ApiService {
       if (kDebugMode) {
         debugPrint('[API ERROR] TimeoutException for $uri: $e\n$stack');
       }
-      if (isCritical) throw Exception('The server took too long to respond. Please try again.');
-      return _fallbackResponse(path, body: body);
+      throw Exception('The server took too long to respond. Please try again.');
     } on SocketException catch (e, stack) {
       if (kDebugMode) {
         debugPrint('[API ERROR] SocketException for $uri: $e\n$stack');
       }
-      if (isCritical) throw Exception('Unable to connect to server. Please check your internet connection.');
-      return _fallbackResponse(path, body: body);
+      throw Exception('Unable to connect to server. Please check your internet connection.');
     } on Exception catch (e, stack) {
       if (kDebugMode) {
         debugPrint('[API ERROR] Exception for $uri: $e\n$stack');
       }
-      // Rethrow for critical operations so errors surface to the UI correctly
-      if (isCritical) rethrow;
-      // For read-only requests fall back to cached/mock data
-      return _fallbackResponse(path, body: body);
+      rethrow;
     } catch (e, stack) {
       if (kDebugMode) {
         debugPrint('[API ERROR] Unknown error for $uri: $e\n$stack');
       }
-      if (isCritical) throw Exception('Something went wrong. Please try again.');
-      return _fallbackResponse(path, body: body);
+      throw Exception('An unexpected network error occurred.');
     }
   }
 
@@ -409,71 +466,4 @@ class ApiService {
     }
   }
 
-  Map<String, dynamic> _fallbackResponse(
-    String path, {
-    Map<String, dynamic>? body,
-  }) {
-    if (path == '/categories') {
-      return {
-        'data': [
-          {'id': 'all', 'name': 'All'},
-          {'id': 'world', 'name': 'World'},
-          {'id': 'tech', 'name': 'Tech'},
-          {'id': 'sports', 'name': 'Sports'},
-        ],
-      };
-    }
-
-    if (path.startsWith('/news') && !path.contains('/news/')) {
-      return {
-        'data': [
-          {
-            'id': '1',
-            'title': 'AI reshapes the future of local journalism',
-            'content':
-                'A look into how new tools are helping newsrooms deliver faster and more insightful stories.',
-            'imageUrl':
-                'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=900&q=80',
-            'category_id': 'tech',
-            'category_name': 'Tech',
-            'authorName': 'Avery Brooks',
-            'created_at': DateTime.now().toIso8601String(),
-          },
-          {
-            'id': '2',
-            'title': 'Weekend sports roundup',
-            'content':
-                'Teams across the region delivered dramatic finishes, keeping fans on the edge of their seats.',
-            'imageUrl':
-                'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80',
-            'category_id': 'sports',
-            'category_name': 'Sports',
-            'authorName': 'Jordan Lee',
-            'created_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-          },
-        ],
-      };
-    }
-
-    if (path.startsWith('/news/')) {
-      return {
-        'data': {
-          'id': path.split('/').last,
-          'title': 'Sample article preview',
-          'content':
-              'This preview shows how the full article card will look once the backend data is available.',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=900&q=80',
-          'category_id': 'general',
-          'category_name': 'General',
-          'authorName': 'Admin',
-          'created_at': DateTime.now().toIso8601String(),
-        },
-      };
-    }
-
-    // Auth routes are critical — no fallback allowed (handled by rethrow above)
-
-    return {'data': []};
-  }
 }

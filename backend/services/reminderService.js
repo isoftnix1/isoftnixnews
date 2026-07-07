@@ -13,7 +13,8 @@ async function processReminders(trigger = 'manual') {
     : `INTERVAL '${delayHours} HOURS'`;
   
   let newsProcessed = 0;
-  let eligibleUsersFound = 0;
+  let eligibleDevicesFound = 0;
+  let uniqueUsersProcessed = 0;
   let notificationsSent = 0;
   let notificationsFailed = 0;
   let status = 'SUCCESS';
@@ -71,7 +72,7 @@ async function processReminders(trigger = 'manual') {
         `, [news.id]);
 
         const users = usersResult.rows;
-        eligibleUsersFound += users.length;
+        eligibleDevicesFound += users.length;
 
         // 3. Process in batches
         for (let i = 0; i < users.length; i += BATCH_SIZE) {
@@ -85,26 +86,43 @@ async function processReminders(trigger = 'manual') {
             });
 
             // Handle FCM Responses
-            const deliveryValues = [];
+            const userStatusMap = new Map();
+            
             for (let j = 0; j < batch.length; j++) {
               const user = batch[j];
               const response = fcmResult.responses[j];
               
-              if (response.success) {
-                deliveryValues.push(`('${user.user_id}', '${news.id}', 'reminder', 'success', NOW(), NULL, 0, NULL)`);
+              if (!response.success) {
+                const error = response.error ? response.error.code : 'Unknown';
+                if (error === 'messaging/registration-token-not-registered' || error === 'messaging/invalid-registration-token') {
+                  await pool.query('DELETE FROM device_tokens WHERE id = $1', [user.token_id]);
+                }
+              }
+
+              // If a user has multiple devices, if ANY device succeeds, mark the user delivery as success.
+              const currentStatus = userStatusMap.get(user.user_id);
+              if (currentStatus?.success) {
+                continue; // Already succeeded for this user
+              }
+
+              userStatusMap.set(user.user_id, {
+                success: response.success,
+                error: response.success ? null : (response.error ? response.error.code : 'Unknown')
+              });
+            }
+
+            const deliveryValues = [];
+            uniqueUsersProcessed += userStatusMap.size;
+            
+            for (const [userId, status] of userStatusMap.entries()) {
+              if (status.success) {
+                deliveryValues.push(`('${userId}', '${news.id}', 'reminder', 'success', NOW(), NULL, 0, NULL)`);
                 notificationsSent++;
                 sentCount++;
               } else {
-                const error = response.error ? response.error.code : 'Unknown';
-                // If token is unregistered, we could delete it here
-                if (error === 'messaging/registration-token-not-registered') {
-                  await pool.query('DELETE FROM device_tokens WHERE id = $1', [user.token_id]);
-                }
-                
-                // Exponential backoff logic
                 const retryCount = 1;
                 const nextRetry = `NOW() + INTERVAL '15 MINUTES'`;
-                deliveryValues.push(`('${user.user_id}', '${news.id}', 'reminder', 'failed', NULL, '${error}', ${retryCount}, ${nextRetry})`);
+                deliveryValues.push(`('${userId}', '${news.id}', 'reminder', 'failed', NULL, '${status.error}', ${retryCount}, ${nextRetry})`);
                 notificationsFailed++;
               }
             }
@@ -170,18 +188,20 @@ Reminder Service ${status === 'SUCCESS' ? 'Completed' : 'Failed'}
 Trigger        : ${trigger}
 Started At     : ${new Date(startTime).toLocaleString()}
 ${status === 'FAILED' ? `Reason         : ${failReason}` : ''}
-News Found     : ${newsProcessed}
-Eligible Users : ${eligibleUsersFound}
+News Found           : ${newsProcessed}
+Eligible Devices     : ${eligibleDevicesFound}
+Unique Users         : ${uniqueUsersProcessed}
 Notifications Sent   : ${notificationsSent}
 Notifications Failed : ${notificationsFailed}
-Execution Time : ${execTime} sec
-Status         : ${status}
+Execution Time       : ${execTime} sec
+Status               : ${status}
 ======================================
 `);
 
   return {
     newsProcessed,
-    eligibleUsersFound,
+    eligibleDevicesFound,
+    uniqueUsersProcessed,
     notificationsSent,
     notificationsFailed,
     execTime,

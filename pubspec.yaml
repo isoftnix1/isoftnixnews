@@ -56,6 +56,8 @@ dependencies:
   visibility_detector: ^0.4.0
   path_provider: ^2.1.2
   flutter_cache_manager: ^3.3.1
+  device_info_plus: ^11.0.0
+  package_info_plus: ^8.0.0
 
 
 dev_dependencies:
@@ -85,6 +87,8 @@ flutter:
     - .env.development
     - .env.production
     - assets/icon/
+    - assets/images/corn.png
+    - assets/images/background.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

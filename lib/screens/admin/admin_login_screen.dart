@@ -54,6 +54,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(title: const Text('Admin Login')),
       body: Center(
         child: SingleChildScrollView(
@@ -106,3 +107,4 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 }
+

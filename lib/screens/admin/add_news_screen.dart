@@ -152,6 +152,15 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
     if (!mounted) return;
     Navigator.pop(context); // Close Uploading dialog
     setState(() => _isSubmitting = false);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('News created and notifications successfully sent to all users!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 4),
+      ),
+    );
+    
     Navigator.pop(context); // Close Add Screen
   }
 
