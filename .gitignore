@@ -59,6 +59,7 @@ android/app/*.keystore
 *.pfx
 
 # Firebase Service Account keys - NEVER commit these
+android/app/google-services.json
 serviceAccountKey.json
 firebase-adminsdk.json
 firebase-service-account.json
