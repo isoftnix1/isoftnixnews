@@ -74,11 +74,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final user = await _apiService.login(email, password);
-      _user = user;
-      if (ApiService.authToken != null) {
-        await _storage.write(key: 'auth_token', value: ApiService.authToken);
+      final responseData = await _apiService.login(email, password);
+      _user = responseData['user'];
+      
+      final accessToken = responseData['accessToken'];
+      final refreshToken = responseData['refreshToken'];
+      
+      if (accessToken != null) {
+        ApiService.authToken = accessToken;
+        await _storage.write(key: 'auth_token', value: accessToken);
       }
+      if (refreshToken != null) {
+        await _storage.write(key: 'refresh_token', value: refreshToken);
+      }
+      
       await _refreshUserProfile();
       // Register FCM token to backend
       _registerFcmToken();
@@ -103,16 +112,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final user = await _apiService.register(
+      final responseData = await _apiService.register(
         name,
         email,
         phone,
         password,
       );
-      _user = user;
-      if (ApiService.authToken != null) {
-        await _storage.write(key: 'auth_token', value: ApiService.authToken);
+      _user = responseData['user'];
+      
+      final accessToken = responseData['accessToken'];
+      final refreshToken = responseData['refreshToken'];
+      
+      if (accessToken != null) {
+        ApiService.authToken = accessToken;
+        await _storage.write(key: 'auth_token', value: accessToken);
       }
+      if (refreshToken != null) {
+        await _storage.write(key: 'refresh_token', value: refreshToken);
+      }
+      
       await _refreshUserProfile();
       // Register FCM token to backend
       _registerFcmToken();
@@ -203,10 +221,22 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await _apiService.logout();
     _user = null;
     _errorMessage = null;
     ApiService.authToken = null;
     await _storage.delete(key: 'auth_token');
+    await _storage.delete(key: 'refresh_token');
+    notifyListeners();
+  }
+
+  Future<void> logoutAll() async {
+    await _apiService.logoutAll();
+    _user = null;
+    _errorMessage = null;
+    ApiService.authToken = null;
+    await _storage.delete(key: 'auth_token');
+    await _storage.delete(key: 'refresh_token');
     notifyListeners();
   }
 

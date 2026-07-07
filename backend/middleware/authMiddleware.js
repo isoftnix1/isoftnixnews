@@ -15,7 +15,8 @@ async function resolveUserFromToken(token) {
     algorithms: ['HS256'],
   });
 
-  const user = await User.findAuthUserById(decoded.id);
+  const userId = decoded.sub || decoded.id;
+  const user = await User.findAuthUserById(userId);
   if (!user) {
     return null;
   }
@@ -77,5 +78,17 @@ async function optionalAuthMiddleware(req, res, next) {
   return next();
 }
 
-module.exports = authMiddleware;
-module.exports.optionalAuthMiddleware = optionalAuthMiddleware;
+function roleMiddleware(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return errorResponse(res, 403, 'You do not have permission to perform this action');
+    }
+    next();
+  };
+}
+
+module.exports = {
+  authMiddleware,
+  optionalAuthMiddleware,
+  roleMiddleware,
+};

@@ -10,7 +10,7 @@ async function runMigration() {
 
   try {
     await client.connect();
-    const sql = fs.readFileSync(path.join(__dirname, 'sql', '02_user_devices.sql'), 'utf8');
+    const sql = fs.readFileSync(path.join(__dirname, 'sql', '05_admin_hardware_logs.sql'), 'utf8');
     await client.query(sql);
     console.log('Migration executed successfully.');
   } catch (err) {

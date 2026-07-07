@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const validate = require('../middleware/validateRequest');
 const { registerDeviceSchema, heartbeatSchema } = require('../utils/schemas');

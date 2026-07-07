@@ -2,10 +2,7 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: { rejectUnauthorized: false }, // Neon strictly requires SSL even in development
   connectionTimeoutMillis: 60000,
   query_timeout: 60000,
 });
@@ -76,6 +73,14 @@ async function initializeDatabase() {
         token TEXT NOT NULL UNIQUE,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS user_app_usage (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        usage_date DATE NOT NULL,
+        time_spent_seconds INT NOT NULL DEFAULT 0,
+        UNIQUE(user_id, usage_date)
       );
     `);
   } finally {

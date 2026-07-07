@@ -5,7 +5,7 @@ const {
   updateCategory,
   deleteCategory,
 } = require('../controllers/categoryController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const validate = require('../middleware/validateRequest');
 const schemas = require('../utils/schemas');

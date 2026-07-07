@@ -6,8 +6,7 @@ const {
   updateNews,
   deleteNews,
 } = require('../controllers/newsController');
-const authMiddleware = require('../middleware/authMiddleware');
-const optionalAuthMiddleware = require('../middleware/authMiddleware').optionalAuthMiddleware;
+const { authMiddleware, optionalAuthMiddleware } = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 const validate = require('../middleware/validateRequest');

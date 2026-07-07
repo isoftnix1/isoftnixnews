@@ -14,6 +14,7 @@ import 'routes/app_routes.dart';
 import 'services/deep_link_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/device_service.dart';
+import 'services/time_tracking_service.dart';
 import 'theme/app_theme.dart';
 
 /// Global navigator key used by [DeepLinkService] to navigate
@@ -61,6 +62,9 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> with WidgetsBindingOb
         deepLinkService: _deepLinkService,
       );
       await PushNotificationService.instance.setupInteractedMessage();
+      
+      // Initialize Time Tracking Analytics
+      await TimeTrackingService().init();
       
       // Trigger initial heartbeat
       DeviceService().sendHeartbeat();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -10,24 +11,39 @@ import '../models/category_model.dart';
 import '../models/news_model.dart';
 import '../models/user_model.dart';
 import '../models/notification_model.dart';
+import 'hardware_fingerprint_service.dart';
 
 class ApiService {
   static String get baseUrl => ApiConfig.baseUrl;
   static String? authToken;
+  static const _storage = FlutterSecureStorage();
+  static bool _isRefreshing = false;
+  static Completer<bool>? _refreshCompleter;
 
-  Future<UserModel> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final fingerprintService = HardwareFingerprintService();
+    final fingerprint = await fingerprintService.getHardwareFingerprint();
+    final rawInfo = await fingerprintService.getRawDeviceInformation();
+
     final response = await _request(
       '/auth/login',
       method: 'POST',
-      body: {'email': email, 'password': password},
+      body: {
+        'email': email, 
+        'password': password,
+        'hardwareFingerprint': fingerprint,
+        'deviceInformation': rawInfo,
+      },
     );
-    if (response['data'] != null && response['data']['token'] != null) {
-      authToken = response['data']['token'];
-    }
-    return UserModel.fromJson(response['data']['user']);
+    final data = response['data'];
+    return {
+      'user': UserModel.fromJson(data['user']),
+      'accessToken': data['accessToken'],
+      'refreshToken': data['refreshToken'],
+    };
   }
 
-  Future<UserModel> register(
+  Future<Map<String, dynamic>> register(
     String name,
     String email,
     String phone,
@@ -43,10 +59,35 @@ class ApiService {
         'password': password,
       },
     );
-    if (response['data'] != null && response['data']['token'] != null) {
-      authToken = response['data']['token'];
+    final data = response['data'];
+    return {
+      'user': UserModel.fromJson(data['user']),
+      'accessToken': data['accessToken'],
+      'refreshToken': data['refreshToken'],
+    };
+  }
+
+  Future<void> logout() async {
+    final refreshToken = await _storage.read(key: 'refresh_token');
+    if (refreshToken != null) {
+      try {
+        await _request(
+          '/auth/logout',
+          method: 'POST',
+          body: {'refreshToken': refreshToken},
+        );
+      } catch (e) {
+        debugPrint('Logout backend call failed: $e');
+      }
     }
-    return UserModel.fromJson(response['data']['user']);
+  }
+
+  Future<void> logoutAll() async {
+    try {
+      await _request('/auth/logout-all', method: 'POST');
+    } catch (e) {
+      debugPrint('Logout-all backend call failed: $e');
+    }
   }
 
   Future<List<CategoryModel>> getCategories({String? lang}) async {
@@ -256,6 +297,93 @@ class ApiService {
   }
 
   // ---------------------------------------------------------
+  // Admin Hardware Lock
+  // ---------------------------------------------------------
+
+  Future<List<Map<String, dynamic>>> getAdminHardwareSlots() async {
+    final response = await _request('/admin/hardware-lock');
+    return List<Map<String, dynamic>>.from(response['data'] ?? []);
+  }
+
+  Future<void> requestAdminHardwareReplacement(String password) async {
+    await _request(
+      '/admin/hardware-lock/request-otp',
+      method: 'POST',
+      body: {'password': password},
+    );
+  }
+
+  Future<void> replaceAdminHardwareSlot({
+    required int slotNumber,
+    required String password,
+    required String otp,
+  }) async {
+    final fingerprintService = HardwareFingerprintService();
+    final fingerprint = await fingerprintService.getHardwareFingerprint();
+    final rawInfo = await fingerprintService.getRawDeviceInformation();
+
+    await _request(
+      '/admin/hardware-lock/replace',
+      method: 'POST',
+      body: {
+        'slotNumber': slotNumber,
+        'hardwareFingerprint': fingerprint,
+        'deviceInformation': rawInfo,
+        'password': password,
+        'otp': otp,
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingDevices() async {
+    final response = await _request('/admin/hardware-lock/pending');
+    final List<dynamic> rawPending = response['data'] ?? [];
+    return rawPending.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  Future<void> authorizePendingDevice({
+    required String attemptId,
+    required int slotNumber,
+    required String password,
+  }) async {
+    await _request(
+      '/admin/hardware-lock/authorize-pending',
+      method: 'POST',
+      body: {
+        'attemptId': attemptId,
+        'slotNumber': slotNumber,
+        'password': password,
+      },
+    );
+  }
+
+  // ---------------------------------------------------------
+  // Analytics
+  // ---------------------------------------------------------
+  Future<void> syncUsageTime(String date, int seconds) async {
+    try {
+      await _request(
+        '/analytics/usage-time',
+        method: 'POST',
+        body: {
+          'usage_date': date,
+          'seconds_used': seconds,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('Failed to sync usage time: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getGlobalAnalytics() async {
+    final response = await _request('/analytics/global-usage', method: 'GET');
+    if (response != null && response['success'] == true) {
+      return List<Map<String, dynamic>>.from(response['data'] ?? []);
+    }
+    return [];
+  }
+
+  // ---------------------------------------------------------
   // Internal request helpers
   // ---------------------------------------------------------
 
@@ -305,11 +433,71 @@ class ApiService {
     );
   }
 
+  Future<bool> _refreshToken() async {
+    if (_isRefreshing) {
+      if (_refreshCompleter != null) return _refreshCompleter!.future;
+      return false;
+    }
+    
+    _isRefreshing = true;
+    _refreshCompleter = Completer<bool>();
+    
+    try {
+      final refreshToken = await _storage.read(key: 'refresh_token');
+      if (refreshToken == null) {
+        _isRefreshing = false;
+        _refreshCompleter?.complete(false);
+        return false;
+      }
+
+      final uri = Uri.parse('$baseUrl/auth/refresh');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final data = decoded['data'];
+        
+        final newAccess = data['accessToken'];
+        final newRefresh = data['refreshToken'];
+        
+        if (newAccess != null) {
+          authToken = newAccess;
+          await _storage.write(key: 'auth_token', value: newAccess);
+        }
+        if (newRefresh != null) {
+          await _storage.write(key: 'refresh_token', value: newRefresh);
+        }
+        
+        _isRefreshing = false;
+        _refreshCompleter?.complete(true);
+        return true;
+      }
+      
+      // Token rejected
+      await _storage.delete(key: 'refresh_token');
+      await _storage.delete(key: 'auth_token');
+      authToken = null;
+      _isRefreshing = false;
+      _refreshCompleter?.complete(false);
+      return false;
+      
+    } catch (e) {
+      _isRefreshing = false;
+      _refreshCompleter?.complete(false);
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> _request(
     String path, {
     String method = 'GET',
     Map<String, String>? queryParameters,
     Map<String, dynamic>? body,
+    bool isRetry = false,
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(
       queryParameters: queryParameters,
@@ -366,6 +554,18 @@ class ApiService {
       }
 
       final decoded = jsonDecode(response.body);
+      
+      if (response.statusCode == 401 && !isRetry) {
+        // Token might be expired, attempt to refresh
+        if (authToken != null) {
+          final refreshed = await _refreshToken();
+          if (refreshed) {
+            // Retry original request
+            return _request(path, method: method, queryParameters: queryParameters, body: body, isRetry: true);
+          }
+        }
+      }
+
       if (response.statusCode < 200 || response.statusCode >= 300) {
         // Extract a clean server message if available
         final message = decoded is Map<String, dynamic>
@@ -403,6 +603,7 @@ class ApiService {
     required NewsModel news,
     File? imageFile,
     File? videoFile,
+    bool isRetry = false,
   }) async {
     final uri = Uri.parse('$baseUrl$path');
     final request = http.MultipartRequest(method, uri);
@@ -451,6 +652,22 @@ class ApiService {
       final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
       final response = await http.Response.fromStream(streamedResponse);
       final decoded = jsonDecode(response.body);
+      
+      if (response.statusCode == 401 && !isRetry) {
+        if (authToken != null) {
+          final refreshed = await _refreshToken();
+          if (refreshed) {
+            return _multipartRequest(
+              path,
+              method: method,
+              news: news,
+              imageFile: imageFile,
+              videoFile: videoFile,
+              isRetry: true,
+            );
+          }
+        }
+      }
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = decoded is Map<String, dynamic>

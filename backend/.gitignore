@@ -33,3 +33,9 @@ Thumbs.db
 # Test/Scratch files - never commit these
 payload.json
 *.json.test
+
+# Historical DB Migrations
+sql/
+
+# Encrypted Hardware Slots (Zero-Trust Security)
+security/admin_devices/*.enc

@@ -84,6 +84,20 @@ class AdminDashboardScreen extends StatelessWidget {
               route: AppRoutes.deviceManagement,
               delay: 700,
             ),
+            _DashboardAction(
+              title: 'Hardware\nLock',
+              icon: Icons.lock_person_rounded,
+              color: Colors.redAccent,
+              route: AppRoutes.hardwareLock,
+              delay: 800,
+            ),
+            _DashboardAction(
+              title: 'User\nAnalytics',
+              icon: Icons.analytics_rounded,
+              color: Colors.teal,
+              route: AppRoutes.adminAnalytics,
+              delay: 900,
+            ),
           ];
 
           return SingleChildScrollView(
@@ -255,15 +269,22 @@ class AdminDashboardScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: isTablet ? 18 : 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            height: 1.2,
+                        Expanded(
+                          child: FittedBox(
+                            alignment: Alignment.centerLeft,
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: isTablet ? 18 : 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.2,
+                              ),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(

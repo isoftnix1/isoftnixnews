@@ -1,6 +1,6 @@
 const express = require('express');
 const { processReminders } = require('../services/reminderService');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 
 const router = express.Router();

@@ -44,10 +44,15 @@ function initScheduler() {
   cron.schedule('0 3 * * *', async () => {
     try {
       const deviceService = require('./deviceService');
+      const AuthSecurity = require('../models/AuthSecurity');
+      
       const stats = await deviceService.cleanupStaleTokens();
-      console.log(`[Scheduler] Daily device cleanup complete. Inactive: ${stats.markedInactive}, Invalid deleted: ${stats.deletedInvalid}`);
+      const tokensDeleted = await AuthSecurity.deleteExpiredOrRevokedTokens();
+      
+      console.log(`[Scheduler] Daily cleanup complete. Devices -> Inactive: ${stats.markedInactive}, Invalid deleted: ${stats.deletedInvalid}`);
+      console.log(`[Scheduler] Daily cleanup complete. Auth -> Expired/Revoked tokens deleted: ${tokensDeleted}`);
     } catch (error) {
-      console.error('[Scheduler] Error in daily device cleanup:', error);
+      console.error('[Scheduler] Error in daily cleanup:', error);
     }
   });
 }

@@ -7,6 +7,8 @@ import '../screens/admin/category_management_screen.dart';
 import '../screens/admin/device_management_screen.dart';
 import '../screens/admin/edit_news_screen.dart';
 import '../screens/admin/news_list_screen.dart';
+import '../screens/admin/hardware_lock_screen.dart';
+import '../screens/admin/analytics_dashboard_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
@@ -43,6 +45,8 @@ class AppRoutes {
   static const String editNews = '/edit-news';
   static const String manageCategories = '/manage-categories';
   static const String deviceManagement = '/device-management';
+  static const String hardwareLock = '/hardware-lock';
+  static const String adminAnalytics = '/admin-analytics';
   static const String externalArticle = '/external-article';
 
   /// Static routes for simple navigation without arguments.
@@ -63,6 +67,8 @@ class AppRoutes {
     editNews: (context) => const EditNewsScreen(),
     manageCategories: (context) => const CategoryManagementScreen(),
     deviceManagement: (context) => const DeviceManagementScreen(),
+    hardwareLock: (context) => const HardwareLockScreen(),
+    adminAnalytics: (context) => const AnalyticsDashboardScreen(),
   };
 
   /// Dynamic route generator to handle:
