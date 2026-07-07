@@ -117,16 +117,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<NotificationProvider>();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor, // Fallback
-        image: const DecorationImage(
-          image: AssetImage('assets/images/background.jpg'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: AppBar(
         title: const Text('Notifications'),
         centerTitle: true,
@@ -170,7 +161,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     },
                   ),
                 ),
-      ),
     );
   }
 }

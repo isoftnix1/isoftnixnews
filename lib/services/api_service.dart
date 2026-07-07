@@ -377,7 +377,7 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getGlobalAnalytics() async {
     final response = await _request('/analytics/global-usage', method: 'GET');
-    if (response != null && response['success'] == true) {
+    if (response['success'] == true) {
       return List<Map<String, dynamic>>.from(response['data'] ?? []);
     }
     return [];

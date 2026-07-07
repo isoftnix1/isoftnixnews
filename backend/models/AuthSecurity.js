@@ -181,7 +181,7 @@ class AuthSecurity {
 
   static async getPendingDevices(email, limit = 5) {
     const query = `
-      SELECT id, fingerprint, ip_address, user_agent, created_at, status 
+      SELECT id, fingerprint, ip_address, user_agent, created_at, status, device_info
       FROM failed_admin_hardware_attempts 
       WHERE email = $1 AND status = 'BLOCKED'
       ORDER BY created_at DESC

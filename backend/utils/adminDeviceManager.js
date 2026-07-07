@@ -1,18 +1,10 @@
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const { pool } = require('../config/db');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_LENGTH = 16;
 const TAG_LENGTH = 16;
-
-const SECRETS_DIR = path.join(__dirname, '..', 'security', 'admin_devices');
-
-// Ensure directory exists
-if (!fs.existsSync(SECRETS_DIR)) {
-  fs.mkdirSync(SECRETS_DIR, { recursive: true });
-}
 
 function getKey() {
   const key = process.env.ADMIN_DEVICE_ENCRYPTION_KEY;
@@ -69,18 +61,20 @@ function decryptData(encryptedString) {
 }
 
 class AdminDeviceManager {
-  static getSlotPath(slotNumber) {
-    return path.join(SECRETS_DIR, `slot_${slotNumber}.enc`);
-  }
-
   static async getAllSlots() {
     const slots = [];
+    const result = await pool.query('SELECT id, encrypted_data FROM admin_hardware_slots');
+    
+    // Create a lookup map for existing slots
+    const dbSlots = new Map();
+    for (const row of result.rows) {
+      dbSlots.set(row.id, row.encrypted_data);
+    }
+
     for (let i = 1; i <= 5; i++) {
-      const filePath = this.getSlotPath(i);
       let slotData = null;
-      if (fs.existsSync(filePath)) {
-        const encryptedContent = fs.readFileSync(filePath, 'utf8');
-        slotData = decryptData(encryptedContent);
+      if (dbSlots.has(i)) {
+        slotData = decryptData(dbSlots.get(i));
       }
       slots.push({ slot: i, data: slotData });
     }
@@ -91,14 +85,12 @@ class AdminDeviceManager {
     // If no fingerprint is provided, block
     if (!fingerprint) return false;
 
-    for (let i = 1; i <= 5; i++) {
-      const filePath = this.getSlotPath(i);
-      if (fs.existsSync(filePath)) {
-        const encryptedContent = fs.readFileSync(filePath, 'utf8');
-        const slotData = decryptData(encryptedContent);
-        if (slotData && slotData.hardwareFingerprint === fingerprint) {
-          return true;
-        }
+    const result = await pool.query('SELECT encrypted_data FROM admin_hardware_slots');
+    
+    for (const row of result.rows) {
+      const slotData = decryptData(row.encrypted_data);
+      if (slotData && slotData.hardwareFingerprint === fingerprint) {
+        return true;
       }
     }
     return false; // No slot matched
@@ -123,10 +115,23 @@ class AdminDeviceManager {
     };
 
     const encryptedString = encryptData(payload);
-    const filePath = this.getSlotPath(slotNumber);
-    fs.writeFileSync(filePath, encryptedString, 'utf8');
+    
+    // Upsert into PostgreSQL
+    await pool.query(`
+      INSERT INTO admin_hardware_slots (id, encrypted_data, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (id) 
+      DO UPDATE SET encrypted_data = EXCLUDED.encrypted_data, updated_at = NOW()
+    `, [slotNumber, encryptedString]);
 
     return payload;
+  }
+
+  static async deleteSlot(slotNumber) {
+    if (slotNumber < 1 || slotNumber > 5) {
+      throw new Error('Invalid slot number.');
+    }
+    await pool.query('DELETE FROM admin_hardware_slots WHERE id = $1', [slotNumber]);
   }
 
   /**
@@ -134,14 +139,8 @@ class AdminDeviceManager {
    * Useful for detecting a brand new server that needs zero-to-one bootstrapping.
    */
   static async getFilledSlotCount() {
-    let count = 0;
-    for (let i = 1; i <= 5; i++) {
-      const filePath = this.getSlotPath(i);
-      if (fs.existsSync(filePath)) {
-        count++;
-      }
-    }
-    return count;
+    const result = await pool.query('SELECT COUNT(*) FROM admin_hardware_slots');
+    return parseInt(result.rows[0].count, 10);
   }
 }
 

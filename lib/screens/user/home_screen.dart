@@ -121,16 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newsProvider = context.watch<NewsProvider>();
     context.watch<AuthProvider>();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor, // Fallback
-        image: const DecorationImage(
-          image: AssetImage('assets/images/background.jpg'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: AppBar(
 
         leadingWidth: 150, // <-- ADD IT HERE
@@ -271,7 +262,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-      ),
       ),
     );
   }

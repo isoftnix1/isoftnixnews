@@ -82,6 +82,14 @@ async function initializeDatabase() {
         time_spent_seconds INT NOT NULL DEFAULT 0,
         UNIQUE(user_id, usage_date)
       );
+
+      CREATE TABLE IF NOT EXISTS admin_hardware_slots (
+        id INT PRIMARY KEY CHECK (id >= 1 AND id <= 5),
+        encrypted_data TEXT NOT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE failed_admin_hardware_attempts ADD COLUMN IF NOT EXISTS device_info JSONB;
     `);
   } finally {
     client.release();

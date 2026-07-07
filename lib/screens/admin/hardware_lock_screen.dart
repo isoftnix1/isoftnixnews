@@ -216,12 +216,23 @@ class _HardwareLockScreenState extends State<HardwareLockScreen> {
                       final timeStr = pending['created_at'] != null 
                           ? DateTime.parse(pending['created_at']).toLocal().toString().split('.')[0] 
                           : 'Unknown';
+                          
+                      final deviceInfo = pending['device_info'];
+                      final hasDeviceInfo = deviceInfo != null;
+                      final titleStr = hasDeviceInfo 
+                          ? 'Device: ${deviceInfo['deviceName'] ?? 'Unknown'}' 
+                          : 'IP: ${pending['ip_address']}';
+                          
+                      final subtitleStr = hasDeviceInfo
+                          ? 'Platform: ${deviceInfo['platform'] ?? 'Unknown'} (${deviceInfo['osVersion'] ?? '?'})\nTime: $timeStr'
+                          : 'Time: $timeStr\nUser-Agent: ${pending['user_agent']}';
+
                       return Card(
                         color: Colors.red.shade50,
                         margin: const EdgeInsets.only(bottom: 16),
                         child: ListTile(
-                          title: Text('IP: ${pending['ip_address']}'),
-                          subtitle: Text('Time: $timeStr\nUser-Agent: ${pending['user_agent']}'),
+                          title: Text(titleStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(subtitleStr),
                           isThreeLine: true,
                           trailing: ElevatedButton(
                             onPressed: () => _authorizePendingDeviceFlow(pending['id'].toString()),

@@ -15,16 +15,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final userName = context.watch<AuthProvider>().user?.name ?? 'Admin';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor, // Fallback
-        image: const DecorationImage(
-          image: AssetImage('assets/images/background.jpg'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
         appBar: AppBar(
         title: const Text(
           'Dashboard',
@@ -32,7 +23,6 @@ class AdminDashboardScreen extends StatelessWidget {
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.transparent,
       ),
       drawer: const AppDrawer(),
       body: LayoutBuilder(
@@ -198,7 +188,6 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           );
         },
-      ),
       ),
     );
   }
