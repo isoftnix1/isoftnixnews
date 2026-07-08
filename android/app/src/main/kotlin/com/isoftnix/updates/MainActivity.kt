@@ -1,4 +1,4 @@
-package com.example.isoftnix_news
+package com.isoftnix.updates
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

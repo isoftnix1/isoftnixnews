@@ -124,11 +124,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
         appBar: AppBar(
 
-        leadingWidth: 150, // <-- ADD IT HERE
-
+        leadingWidth: 96,
         leading: Builder(
           builder: (context) {
             return Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.menu),
@@ -142,12 +142,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     children: [
                       const Icon(Icons.language, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                        context.watch<LanguageProvider>().currentLanguage == 'hi'
-                            ? 'हिन्दी'
-                            : (context.watch<LanguageProvider>().currentLanguage == 'mr' ? 'मराठी' : 'English'),
-                      ),
                       const Icon(Icons.arrow_drop_down, size: 18),
                     ],
                   ),

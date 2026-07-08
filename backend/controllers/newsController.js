@@ -9,6 +9,7 @@ const User = require('../models/User');
 const { validateFileSignature } = require('../utils/validateFileType');
 const upload = require('../middleware/uploadMiddleware');
 const { pool } = require('../config/db');
+const cache = require('../utils/cache');
 
 function isUuid(str) {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
@@ -24,6 +25,14 @@ async function listNews(req, res, next) {
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;
     const isAdmin = req.user?.role === 'admin';
+
+    const cacheKey = `news_page_${page}_limit_${limit}_search_${search}_cat_${categoryId}_lang_${lang}_start_${startDate}_end_${endDate}_admin_${isAdmin}`;
+
+    // 1. Check Cache
+    const cachedNews = cache.getCache(cacheKey);
+    if (cachedNews) {
+      return successResponse(res, 200, cachedNews);
+    }
 
     const result = await News.getNewsPage({
       page,
@@ -73,6 +82,9 @@ async function listNews(req, res, next) {
 
     result.items = mappedItems;
 
+    // 3. Set Cache for 10 minutes (600 seconds)
+    cache.setCache(cacheKey, result, 600);
+
     return successResponse(res, 200, result);
   } catch (error) {
     return next(error);
@@ -83,10 +95,16 @@ async function getNewsByIdController(req, res, next) {
   try {
     if (!isUuid(req.params.id)) return errorResponse(res, 400, 'Invalid article ID format');
     const isAdmin = req.user?.role === 'admin';
+    const lang = req.query.lang || 'en';
+    
+    const cacheKey = `news_article_${req.params.id}_lang_${lang}_admin_${isAdmin}`;
+    const cachedArticle = cache.getCache(cacheKey);
+    if (cachedArticle) {
+      return successResponse(res, 200, cachedArticle);
+    }
+
     const news = await News.getNewsById(req.params.id, { publishedOnly: !isAdmin });
     if (!news) return errorResponse(res, 404, 'News not found');
-
-    const lang = req.query.lang || 'en';
     let title = news.title_en;
     let content = news.content_en;
     let category_name = news.category_name_en;
@@ -114,6 +132,8 @@ async function getNewsByIdController(req, res, next) {
       category_name,
       categories: mappedCategories,
     };
+
+    cache.setCache(cacheKey, mappedNews, 600);
 
     return successResponse(res, 200, mappedNews);
   } catch (error) {
@@ -234,6 +254,9 @@ async function createNews(req, res, next) {
       )
     );
 
+    // Invalidate all news caches so clients see the new article instantly
+    cache.deletePattern('news_');
+
     return successResponse(res, 201, savedNews, `News created and notifications sent to ${allUsers.length} users!`);
   } catch (error) {
     return next(error);
@@ -312,6 +335,10 @@ async function updateNews(req, res, next) {
 
     const categoryIds = req.body.categoryIds;
     const updatedNews = await News.updateNews(req.params.id, updates, categoryIds);
+    
+    // Invalidate caches
+    cache.deletePattern('news_');
+
     return successResponse(res, 200, updatedNews, 'News updated successfully');
   } catch (error) {
     return next(error);
@@ -349,6 +376,9 @@ async function deleteNews(req, res, next) {
 
     // Fire cleanup in background — do not await, do not block response
     Promise.all(cleanupPromises);
+
+    // Invalidate caches
+    cache.deletePattern('news_');
 
     return successResponse(res, 200, null, 'News deleted successfully');
   } catch (error) {

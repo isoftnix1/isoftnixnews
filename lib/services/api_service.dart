@@ -20,6 +20,16 @@ class ApiService {
   static bool _isRefreshing = false;
   static Completer<bool>? _refreshCompleter;
 
+  /// Lightweight health-check — wakes the Render backend so login is instant.
+  Future<void> ping() async {
+    try {
+      final uri = Uri.parse('$baseUrl/health');
+      await http.get(uri).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // Silently ignore — ping is best-effort only.
+    }
+  }
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     final fingerprintService = HardwareFingerprintService();
     final fingerprint = await fingerprintService.getHardwareFingerprint();
@@ -522,7 +532,7 @@ class ApiService {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       };
 
-      final timeoutDuration = const Duration(seconds: 60);
+      final timeoutDuration = const Duration(seconds: 15);
       final startTime = DateTime.now();
 
       switch (method) {

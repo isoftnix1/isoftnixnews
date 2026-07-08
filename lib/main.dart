@@ -12,6 +12,7 @@ import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/deep_link_service.dart';
+import 'services/keep_alive_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/device_service.dart';
 import 'services/time_tracking_service.dart';
@@ -35,6 +36,9 @@ Future<void> main() async {
     badge: true,
     sound: true,
   );
+
+  // Wake up the Render backend immediately so login is instant.
+  KeepAliveService.instance.start();
 
   runApp(ISoftNixNewsApp(navigatorKey: navigatorKey));
 }

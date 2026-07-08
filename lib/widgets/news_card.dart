@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import 'package:shimmer/shimmer.dart';
 
 import '../models/news_model.dart';
@@ -17,10 +16,28 @@ class NewsCard extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Returns a human-friendly relative time string — like BBC News / Twitter.
+  /// e.g. "Just now", "5 min ago", "2 hours ago", "Yesterday", "3 days ago", "5 Jul 2026"
+  String _timeAgo(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) {
+      return diff.inMinutes == 1 ? '1 min ago' : '${diff.inMinutes} min ago';
+    }
+    if (diff.inHours < 24) {
+      return diff.inHours == 1 ? '1 hour ago' : '${diff.inHours} hours ago';
+    }
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    return DateFormat('d MMM yyyy').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     final date = news.createdAt ?? DateTime.now();
-    final formattedDate = DateFormat.yMMMd().format(date);
+    final timeAgoText = _timeAgo(date);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -65,9 +82,14 @@ class NewsCard extends StatelessWidget {
                     errorWidget: (context, url, error) {
                       return Container(
                         height: 200,
-                        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ?? Colors.grey.withValues(alpha: 0.1),
+                        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ??
+                            Colors.grey.withValues(alpha: 0.1),
                         child: Center(
-                          child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40),
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey.withValues(alpha: 0.5),
+                            size: 40,
+                          ),
                         ),
                       );
                     },
@@ -78,7 +100,9 @@ class NewsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Category chips + relative time row ──────────────
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Wrap(
@@ -91,28 +115,52 @@ class NewsCard extends StatelessWidget {
                                   }).toList()
                                 : [
                                     _buildCategoryChip(
-                                        context,
-                                        news.categoryName == null || news.categoryName!.isEmpty
-                                            ? 'General'
-                                            : news.categoryName!)
+                                      context,
+                                      news.categoryName == null || news.categoryName!.isEmpty
+                                          ? 'General'
+                                          : news.categoryName!,
+                                    ),
                                   ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            formattedDate,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontSize: 12,
-                                  color: Colors.white.withAlpha(128),
-                                ),
-                          ),
+                        const SizedBox(width: 8),
+                        // ── Relative time with clock icon ────────────────
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 13,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.color
+                                  ?.withAlpha(160),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              timeAgoText,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color
+                                        ?.withAlpha(160),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 12),
-                    if (news.imageUrl.isEmpty && news.sourceName != null && news.sourceName!.isNotEmpty) ...[
+
+                    // ── External source row ──────────────────────────────
+                    if (news.imageUrl.isEmpty &&
+                        news.sourceName != null &&
+                        news.sourceName!.isNotEmpty) ...[
                       Row(
                         children: [
                           const Icon(Icons.language, size: 16, color: Colors.blue),
@@ -138,6 +186,8 @@ class NewsCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                     ],
+
+                    // ── Title ────────────────────────────────────────────
                     Text(
                       news.title,
                       style: Theme.of(context).textTheme.titleLarge,
@@ -145,6 +195,8 @@ class NewsCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
+
+                    // ── Preview content ──────────────────────────────────
                     Text(
                       news.content,
                       maxLines: 3,

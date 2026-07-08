@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final isLoggedIn = results[0] as bool;
     
     final elapsedTime = DateTime.now().difference(startTime);
-    final remainingDelay = const Duration(milliseconds: 1500) - elapsedTime;
+    final remainingDelay = const Duration(milliseconds: 600) - elapsedTime;
     
     if (remainingDelay > Duration.zero) {
       await Future.delayed(remainingDelay);

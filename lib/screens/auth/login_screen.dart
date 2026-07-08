@@ -194,14 +194,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     ElevatedButton(
                       onPressed: auth.isLoading ? null : _submit,
                       child: auth.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Signing you in...',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
                             )
                           : const Text('Login'),
                     ).animate().fade().scaleXY(begin: 0.9, duration: 400.ms, delay: 400.ms),
+
+                    // ── Subtle status hint while loading ────────────────────
+                    if (auth.isLoading)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Connecting to server…',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withAlpha(160),
+                              ),
+                        ).animate(onPlay: (c) => c.repeat())
+                            .shimmer(duration: 1200.ms, color: Colors.white24),
+                      ),
 
                     const SizedBox(height: 16),
 

@@ -62,6 +62,7 @@ class DeviceService {
         if (kDebugMode) debugPrint('[DeviceService] Cannot register: FCM token is null');
         return;
       }
+      if (kDebugMode) debugPrint('\n\n=== FCM TOKEN FOR TESTING ===\n$fcmToken\n=============================\n\n');
 
       final data = <String, dynamic>{
         'fcm_token': fcmToken,

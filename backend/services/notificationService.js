@@ -62,6 +62,39 @@ async function sendNotificationToTokens(tokens, title, body, data = {}) {
   }
 }
 
+async function sendSilentPingToTokens(tokens) {
+  if (!tokens || tokens.length === 0) return { successCount: 0, failureCount: 0 };
+
+  const cleanTokens = [...new Set(tokens.filter(Boolean))];
+  if (!cleanTokens.length) return { successCount: 0, failureCount: 0 };
+
+  // A silent ping is a data-only message with NO notification object
+  const message = {
+    data: { silent_ping: 'true' },
+    android: {
+      priority: 'normal',
+    },
+    tokens: cleanTokens,
+  };
+
+  try {
+    const response = await getMessaging().sendEachForMulticast(message);
+    
+    // Async background task — handle token failures and uninstalls
+    deviceService.handleFCMResponse(response, cleanTokens).catch(err => {
+      console.error('[NotificationService] Error handling FCM response for silent ping:', err);
+    });
+
+    return {
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    };
+  } catch (error) {
+    console.error('[NotificationService] Silent ping send error:', error);
+    throw error;
+  }
+}
+
 async function sendNotificationToUsers(userIds, title, body, data = {}) {
   return sendNotificationToTokens([], title, body, data);
 }
@@ -69,4 +102,5 @@ async function sendNotificationToUsers(userIds, title, body, data = {}) {
 module.exports = {
   sendNotificationToTokens,
   sendNotificationToUsers,
+  sendSilentPingToTokens,
 };

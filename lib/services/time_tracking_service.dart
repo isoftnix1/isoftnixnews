@@ -11,6 +11,7 @@ class TimeTrackingService with WidgetsBindingObserver {
   TimeTrackingService._internal();
 
   Stopwatch? _stopwatch;
+  Timer? _syncTimer;
   final ApiService _apiService = ApiService();
   
   // Storage keys
@@ -50,9 +51,28 @@ class TimeTrackingService with WidgetsBindingObserver {
     if (_stopwatch == null || !_stopwatch!.isRunning) {
       _stopwatch = Stopwatch()..start();
     }
+    // Sync to backend every 30 seconds to ensure near real-time analytics
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      await _flushToCache();
+      await _syncCachedData();
+    });
+  }
+
+  Future<void> _flushToCache() async {
+    if (_stopwatch != null && _stopwatch!.isRunning) {
+      final elapsedSeconds = _stopwatch!.elapsed.inSeconds;
+      if (elapsedSeconds > 0) {
+        await _addSecondsToCache(elapsedSeconds);
+        // Restart the stopwatch to measure the next chunk
+        _stopwatch!.reset();
+        _stopwatch!.start();
+      }
+    }
   }
 
   Future<void> _stopTrackingAndCache() async {
+    _syncTimer?.cancel();
     if (_stopwatch != null && _stopwatch!.isRunning) {
       _stopwatch!.stop();
       final elapsedSeconds = _stopwatch!.elapsed.inSeconds;
@@ -62,6 +82,8 @@ class TimeTrackingService with WidgetsBindingObserver {
         await _addSecondsToCache(elapsedSeconds);
       }
     }
+    // Attempt a final sync when backgrounding
+    await _syncCachedData();
   }
 
   Future<void> _addSecondsToCache(int newSeconds) async {
@@ -91,7 +113,7 @@ class TimeTrackingService with WidgetsBindingObserver {
     final cachedDate = prefs.getString(_kCachedDate);
 
     // Only sync if we have at least 15 seconds of usage to report
-    if (cachedSeconds > 15 && cachedDate != null && ApiService.authToken != null) {
+    if (cachedSeconds >= 15 && cachedDate != null && ApiService.authToken != null) {
       try {
         await _apiService.syncUsageTime(cachedDate, cachedSeconds);
         // Clear cache after successful sync

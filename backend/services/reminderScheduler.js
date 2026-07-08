@@ -55,6 +55,22 @@ function initScheduler() {
       console.error('[Scheduler] Error in daily cleanup:', error);
     }
   });
+
+  // Silent Ping Job to detect uninstalls (Runs every 8 hours)
+  cron.schedule('0 */8 * * *', async () => {
+    try {
+      const Notification = require('../models/Notification');
+      const notificationService = require('./notificationService');
+      
+      const tokens = await Notification.getAllTokens();
+      if (tokens && tokens.length > 0) {
+        const result = await notificationService.sendSilentPingToTokens(tokens);
+        console.log(`[Scheduler] Silent ping completed. Success: ${result.successCount}, Failed/Uninstalled: ${result.failureCount}`);
+      }
+    } catch (error) {
+      console.error('[Scheduler] Error in silent ping job:', error);
+    }
+  });
 }
 
 module.exports = {
