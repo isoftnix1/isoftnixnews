@@ -37,6 +37,8 @@ class ApiConfig {
       return envUrl;
     }
 
-    return 'http://10.0.2.2:5000/api';
+    // 172.20.10.6 is your laptop's IP on the mobile hotspot network!
+    // This allows your physical phone to connect to your local Node.js backend.
+    return 'http://172.20.10.6:5000/api';
   }
 }

@@ -8,7 +8,13 @@ const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
  * Get a value from the cache
  */
 function getCache(key) {
-  return cache.get(key);
+  const value = cache.get(key);
+  if (value) {
+    console.log(`\n[CACHE] ⚡ HIT: Loaded instantly from memory -> ${key}`);
+  } else {
+    console.log(`\n[CACHE] 🐢 MISS: Fetching from database -> ${key}`);
+  }
+  return value;
 }
 
 /**
@@ -23,6 +29,7 @@ function setCache(key, val, ttl) {
   } else {
     cache.set(key, val);
   }
+  console.log(`[CACHE] 💾 SAVED to memory -> ${key}\n`);
 }
 
 /**

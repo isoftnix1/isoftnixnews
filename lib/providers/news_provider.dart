@@ -108,6 +108,7 @@ class NewsProvider extends ChangeNotifier {
   }
 
   Future<void> recordNewsView(String newsId) async {
+    if (newsId == 'preview') return;
     await _apiService.recordNewsView(newsId);
   }
 

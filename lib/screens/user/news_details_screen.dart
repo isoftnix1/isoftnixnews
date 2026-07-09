@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -170,14 +171,21 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CachedNetworkImage(
-                          imageUrl: _optimizeCloudinaryUrl(news.imageUrl),
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CornLoader(size: 48)),
-                          errorWidget: (context, url, error) =>
-                              Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
-                        ),
+                        !news.imageUrl.startsWith('http')
+                            ? Image.file(
+                                File(news.imageUrl),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: _optimizeCloudinaryUrl(news.imageUrl),
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    const Center(child: CornLoader(size: 48)),
+                                errorWidget: (context, url, error) =>
+                                    Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
+                              ),
                         // Gradient overlay for better text readability and seamless transition
                         DecoratedBox(
                           decoration: BoxDecoration(

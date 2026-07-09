@@ -23,7 +23,8 @@ class ApiService {
   /// Lightweight health-check — wakes the Render backend so login is instant.
   Future<void> ping() async {
     try {
-      final uri = Uri.parse('$baseUrl/health');
+      final baseUri = Uri.parse(baseUrl);
+      final uri = baseUri.replace(path: '/health');
       await http.get(uri).timeout(const Duration(seconds: 8));
     } catch (_) {
       // Silently ignore — ping is best-effort only.
