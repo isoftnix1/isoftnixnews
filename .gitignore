@@ -84,3 +84,5 @@ translation-service/venv/
 translation-service/__pycache__/
 **/__pycache__/
 *.pyc
+aws_vs_neon_pricing.csv
+aws_vs_neon_pricing.xlsx
