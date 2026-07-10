@@ -68,26 +68,72 @@ async function createNotification({ userId, title, body, data = {} }) {
   return result.rows[0];
 }
 
+async function createGlobalNotification(title, body, data = {}) {
+  const result = await pool.query(
+    `INSERT INTO notifications (id, user_id, title, body, data)
+     VALUES (gen_random_uuid(), NULL, $1, $2, $3::jsonb)
+     RETURNING *`,
+    [title, body, JSON.stringify(data)]
+  );
+  return result.rows[0];
+}
+
 async function getNotificationsForUser(userId, limit = 20) {
   const result = await pool.query(
-    `SELECT id, title, body, data, is_read, created_at
-     FROM notifications
-     WHERE user_id = $1
-     ORDER BY created_at DESC
+    `SELECT n.id, n.title, n.body, n.data, n.created_at,
+            CASE 
+               WHEN n.user_id IS NOT NULL THEN n.is_read
+               WHEN urn.notification_id IS NOT NULL THEN true
+               ELSE false 
+            END as is_read
+     FROM notifications n
+     LEFT JOIN user_read_notifications urn 
+            ON n.id = urn.notification_id AND urn.user_id = $1
+     WHERE (n.user_id = $1 OR n.user_id IS NULL)
+       AND n.id NOT IN (SELECT notification_id FROM user_hidden_notifications WHERE user_id = $1)
+     ORDER BY n.created_at DESC
      LIMIT $2`,
     [userId, limit]
   );
   return result.rows;
 }
 
+async function markAsRead(notificationId, userId) {
+  // First update if it's a personal notification
+  const result = await pool.query(
+    `UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2 RETURNING *`,
+    [notificationId, userId]
+  );
+  
+  if (result.rowCount === 0) {
+    // If not found, it might be a global notification, insert into user_read_notifications
+    await pool.query(
+      `INSERT INTO user_read_notifications (user_id, notification_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [userId, notificationId]
+    );
+  }
+  return true;
+}
+
 async function deleteNotificationForUser(notificationId, userId) {
+  // Insert into hidden tracking for global notifications
+  await pool.query(
+    `INSERT INTO user_hidden_notifications (user_id, notification_id)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [userId, notificationId]
+  );
+  
+  // Also delete from notifications if it's a personal notification
   const result = await pool.query(
     `DELETE FROM notifications
      WHERE id = $1 AND user_id = $2
      RETURNING *`,
     [notificationId, userId]
   );
-  return result.rowCount > 0;
+  return true; // We return true because even if rowCount=0, it might be global and was hidden successfully
 }
 
 module.exports = {
@@ -96,6 +142,8 @@ module.exports = {
   getAllTokens,
   getTokensGroupedByLanguage,
   createNotification,
+  createGlobalNotification,
   getNotificationsForUser,
+  markAsRead,
   deleteNotificationForUser,
 };

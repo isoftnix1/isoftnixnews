@@ -51,7 +51,7 @@ class NewsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadNews({bool refresh = false, String? categoryId, String? lang, int limit = 10}) async {
+  Future<void> loadNews({bool refresh = false, String? categoryId, String? lang, int limit = 10, bool includeDrafts = false}) async {
     if (refresh) {
       _page = 1;
       _hasMore = true;
@@ -78,6 +78,7 @@ class NewsProvider extends ChangeNotifier {
         startDate: _selectedStartDate,
         endDate: _selectedEndDate,
         limit: limit,
+        includeDrafts: includeDrafts,
       );
 
       if (refresh || _page == 1) {

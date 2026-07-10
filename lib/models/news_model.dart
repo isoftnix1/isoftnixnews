@@ -24,6 +24,7 @@ class NewsModel {
   final String reminderStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? publishedAt;
 
   const NewsModel({
     required this.id,
@@ -51,6 +52,7 @@ class NewsModel {
     this.reminderStatus = 'pending',
     this.createdAt,
     this.updatedAt,
+    this.publishedAt,
   });
 
   factory NewsModel.fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,9 @@ class NewsModel {
       updatedAt: json['updated_at'] != null 
           ? DateTime.tryParse(json['updated_at'].toString()) 
           : (json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null),
+      publishedAt: json['published_at'] != null 
+          ? DateTime.tryParse(json['published_at'].toString()) 
+          : (json['publishedAt'] != null ? DateTime.tryParse(json['publishedAt'].toString()) : null),
     );
   }
 
@@ -132,6 +137,8 @@ class NewsModel {
       'reminderStatus': reminderStatus,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'published_at': publishedAt?.toIso8601String(),
+      'publishedAt': publishedAt?.toIso8601String(),
     };
   }
 
@@ -161,6 +168,7 @@ class NewsModel {
     String? reminderStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? publishedAt,
   }) {
     return NewsModel(
       id: id ?? this.id,
@@ -188,6 +196,7 @@ class NewsModel {
       reminderStatus: reminderStatus ?? this.reminderStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      publishedAt: publishedAt ?? this.publishedAt,
     );
   }
 }

@@ -139,7 +139,7 @@ async function getNewsById(id, { publishedOnly = false } = {}) {
   return result.rows[0] || null;
 }
 
-async function createNews({ title_en, content_en, title_hi, content_hi, title_mr, content_mr, authorId, categoryIds, imageUrl = null, videoUrl = null, source_name = null, source_url = null, isPublished = true }) {
+async function createNews({ title_en, content_en, title_hi, content_hi, title_mr, content_mr, authorId, categoryIds, imageUrl = null, videoUrl = null, source_name = null, source_url = null, isPublished = true, publishedAt = null }) {
   const id = randomUUID();
   const primaryCategoryId = categoryIds && categoryIds.length > 0 ? categoryIds[0] : null;
   
@@ -149,9 +149,9 @@ async function createNews({ title_en, content_en, title_hi, content_hi, title_mr
     
     const result = await client.query(
       `INSERT INTO news (id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, author_id, category_id, image_url, video_url, source_name, source_url, is_published, published_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CASE WHEN $14 = TRUE THEN NOW() ELSE NULL END)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CASE WHEN $14 = TRUE THEN NOW() ELSE $15 END)
        RETURNING *`,
-      [id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, authorId, primaryCategoryId, imageUrl, videoUrl, source_name, source_url, isPublished]
+      [id, title_en, content_en, title_hi, content_hi, title_mr, content_mr, authorId, primaryCategoryId, imageUrl, videoUrl, source_name, source_url, isPublished, publishedAt]
     );
     
     if (categoryIds && categoryIds.length > 0) {

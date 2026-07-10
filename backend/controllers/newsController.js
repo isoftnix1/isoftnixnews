@@ -4,7 +4,7 @@ const { successResponse, errorResponse } = require('../utils/responseHandler');
 const { validateNewsInput } = require('../utils/validators');
 const { uploadToCloudinary, deleteFromCloudinary, extractCloudinaryPublicId } = require('../services/cloudinaryService');
 const { sendNotificationToTokens } = require('../services/notificationService');
-const { getTokensGroupedByLanguage, createNotification } = require('../models/Notification');
+const { getTokensGroupedByLanguage, createNotification, createGlobalNotification } = require('../models/Notification');
 const User = require('../models/User');
 const { validateFileSignature } = require('../utils/validateFileType');
 const upload = require('../middleware/uploadMiddleware');
@@ -24,9 +24,11 @@ async function listNews(req, res, next) {
     const lang = req.query.lang || 'en';
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;
+    const includeDrafts = req.query.includeDrafts === 'true';
     const isAdmin = req.user?.role === 'admin';
+    const shouldIncludeDrafts = isAdmin && includeDrafts;
 
-    const cacheKey = `news_page_${page}_limit_${limit}_search_${search}_cat_${categoryId}_lang_${lang}_start_${startDate}_end_${endDate}_admin_${isAdmin}`;
+    const cacheKey = `news_page_${page}_limit_${limit}_search_${search}_cat_${categoryId}_lang_${lang}_start_${startDate}_end_${endDate}_drafts_${shouldIncludeDrafts}`;
 
     // 1. Check Cache
     const cachedNews = cache.getCache(cacheKey);
@@ -41,7 +43,7 @@ async function listNews(req, res, next) {
       categoryId,
       startDate,
       endDate,
-      publishedOnly: !isAdmin,
+      publishedOnly: !shouldIncludeDrafts,
     });
 
     // Map language specific columns to 'title' and 'content' for the response
@@ -213,51 +215,50 @@ async function createNews(req, res, next) {
       source_name: req.body.source_name || null,
       source_url: req.body.source_url || null,
       isPublished: req.body.isPublished !== undefined ? req.body.isPublished === true || req.body.isPublished === 'true' : true,
+      publishedAt: req.body.publishedAt || null,
     });
 
-    const groupedTokens = await getTokensGroupedByLanguage();
-    
-    const sendBatch = async (tokens, title, body) => {
-      if (tokens && tokens.length > 0) {
-        // Trim body at a word boundary, roughly 120 chars
-        let trimmedBody = body || 'New Article';
-        trimmedBody = trimmedBody.replace(/\n/g, ' ').trim();
-        if (trimmedBody.length > 120) {
-          const sub = trimmedBody.substring(0, 120);
-          trimmedBody = sub.substring(0, Math.min(sub.length, sub.lastIndexOf(' '))) + '...';
+    const isPublishedSaved = req.body.isPublished !== undefined ? (req.body.isPublished === true || req.body.isPublished === 'true') : true;
+
+    if (isPublishedSaved) {
+      const groupedTokens = await getTokensGroupedByLanguage();
+      
+      const sendBatch = async (tokens, title, body) => {
+        if (tokens && tokens.length > 0) {
+          // Trim body at a word boundary, roughly 120 chars
+          let trimmedBody = body || 'New Article';
+          trimmedBody = trimmedBody.replace(/\n/g, ' ').trim();
+          if (trimmedBody.length > 120) {
+            const sub = trimmedBody.substring(0, 120);
+            trimmedBody = sub.substring(0, Math.min(sub.length, sub.lastIndexOf(' '))) + '...';
+          }
+          await sendNotificationToTokens(
+            tokens,
+            title || 'New Article',
+            trimmedBody,
+            { newsId: savedNews.id }
+          );
         }
-        await sendNotificationToTokens(
-          tokens,
-          title || 'New Article',
-          trimmedBody,
-          { newsId: savedNews.id }
-        );
-      }
-    };
+      };
 
-    await Promise.all([
-      sendBatch(groupedTokens.en, savedNews.title_en, savedNews.content_en),
-      sendBatch(groupedTokens.hi, savedNews.title_hi, savedNews.content_hi),
-      sendBatch(groupedTokens.mr, savedNews.title_mr, savedNews.content_mr)
-    ]);
+      await Promise.all([
+        sendBatch(groupedTokens.en, savedNews.title_en, savedNews.content_en),
+        sendBatch(groupedTokens.hi, savedNews.title_hi, savedNews.content_hi),
+        sendBatch(groupedTokens.mr, savedNews.title_mr, savedNews.content_mr)
+      ]);
 
-    // Save notification to database for all users so it appears in the app's notification center
-    const allUsers = await User.getAllUsers();
-    await Promise.all(
-      allUsers.map((user) =>
-        createNotification({
-          userId: user.id,
-          title: 'New article published',
-          body: savedNews.title_en || 'New Article',
-          data: { newsId: savedNews.id }
-        })
-      )
-    );
+      // Save notification to database globally using exactly 1 row
+      await createGlobalNotification(
+        'New article published', 
+        savedNews.title_en || 'New Article', 
+        { newsId: savedNews.id }
+      );
+    }
 
     // Invalidate all news caches so clients see the new article instantly
     cache.deletePattern('news_');
 
-    return successResponse(res, 201, savedNews, `News created and notifications sent to ${allUsers.length} users!`);
+    return successResponse(res, 201, savedNews, isPublishedSaved ? `News created and notifications broadcasted successfully!` : `News saved as draft successfully!`);
   } catch (error) {
     return next(error);
   }

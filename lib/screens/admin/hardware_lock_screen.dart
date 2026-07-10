@@ -139,6 +139,46 @@ class _HardwareLockScreenState extends State<HardwareLockScreen> {
     );
   }
 
+  Future<void> _rejectPendingDeviceFlow(String attemptId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Attempt?'),
+        content: const Text('Are you sure you want to permanently delete this blocked login attempt from history?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      try {
+        await _apiService.rejectPendingDevice(attemptId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Attempt successfully deleted.')),
+        );
+        _fetchPendingDevices();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,9 +274,20 @@ class _HardwareLockScreenState extends State<HardwareLockScreen> {
                           title: Text(titleStr, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(subtitleStr),
                           isThreeLine: true,
-                          trailing: ElevatedButton(
-                            onPressed: () => _authorizePendingDeviceFlow(pending['id'].toString()),
-                            child: const Text('Authorize'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                tooltip: 'Delete this attempt',
+                                onPressed: () => _rejectPendingDeviceFlow(pending['id'].toString()),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () => _authorizePendingDeviceFlow(pending['id'].toString()),
+                                child: const Text('Authorize'),
+                              ),
+                            ],
                           ),
                         ),
                       );

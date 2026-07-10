@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/news_provider.dart';
 import '../routes/app_routes.dart';
 import '../l10n/app_localizations.dart';
 
@@ -11,6 +12,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final newsProvider = context.watch<NewsProvider>();
     final user = authProvider.user;
     final isAdmin = user?.role == 'admin';
     final theme = Theme.of(context);
@@ -105,6 +107,40 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, AppRoutes.profile);
                   },
+                ),
+                Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    leading: Icon(
+                      Icons.category_rounded,
+                      color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                    ),
+                    title: Text(
+                      'Categories',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: theme.brightness == Brightness.dark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    childrenPadding: const EdgeInsets.only(left: 16),
+                    children: newsProvider.categories.map((category) {
+                      final isSelected = newsProvider.selectedCategoryId == category.id;
+                      return _DrawerItem(
+                        icon: isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                        title: category.name,
+                        iconColor: isSelected ? theme.primaryColor : null,
+                        textColor: isSelected ? theme.primaryColor : null,
+                        onTap: () {
+                          newsProvider.selectCategory(category.id);
+                          newsProvider.loadNews(refresh: true);
+                          Navigator.pop(context);
+                          if (ModalRoute.of(context)?.settings.name != AppRoutes.home) {
+                            Navigator.pushReplacementNamed(context, AppRoutes.home);
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
                 ),
                 if (isAdmin)
                   _DrawerItem(

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getHardwareSlots, requestHardwareReplacement, replaceHardwareSlot, getPendingDevices, authorizePendingDevice } = require('../controllers/adminHardwareController');
+const { getHardwareSlots, requestHardwareReplacement, replaceHardwareSlot, getPendingDevices, authorizePendingDevice, rejectPendingDevice } = require('../controllers/adminHardwareController');
 const { authMiddleware, roleMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -14,5 +14,6 @@ router.post('/hardware-lock/replace', replaceHardwareSlot);
 
 router.get('/hardware-lock/pending', getPendingDevices);
 router.post('/hardware-lock/authorize-pending', authorizePendingDevice);
+router.delete('/hardware-lock/pending/:id', rejectPendingDevice);
 
 module.exports = router;

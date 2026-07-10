@@ -116,7 +116,6 @@ async function processReminders(trigger = 'manual') {
             
             for (const [userId, status] of userStatusMap.entries()) {
               if (status.success) {
-                deliveryValues.push(`('${userId}', '${news.id}', 'reminder', 'success', NOW(), NULL, 0, NULL)`);
                 notificationsSent++;
                 sentCount++;
               } else {
@@ -127,7 +126,7 @@ async function processReminders(trigger = 'manual') {
               }
             }
 
-            // Insert to notification_delivery
+            // Insert to notification_delivery ONLY for failures (so they can be retried)
             if (deliveryValues.length > 0) {
               await pool.query(`
                 INSERT INTO notification_delivery (user_id, news_id, type, status, sent_at, error_message, retry_count, next_retry_at)
@@ -160,6 +159,12 @@ async function processReminders(trigger = 'manual') {
               reminder_sent_count = reminder_sent_count + $1
           WHERE id = $2
         `, [sentCount, news.id]);
+
+        // 5. INSTANT CLEANUP: Delete all delivery tracking for this article to save storage
+        await pool.query(`
+          DELETE FROM notification_delivery 
+          WHERE news_id = $1
+        `, [news.id]);
       }
     }
   } catch (error) {

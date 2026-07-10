@@ -28,6 +28,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _openNotification(NotificationModel item) async {
     final newsId = item.data?['newsId']?.toString();
+    
+    // Mark as read in the background
+    if (!item.isRead) {
+      context.read<NotificationProvider>().markAsRead(item.id);
+    }
+    
     if (newsId == null || newsId.isEmpty) return;
 
     try {

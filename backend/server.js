@@ -18,6 +18,7 @@ const deviceRoutes = require('./routes/deviceRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
 const { initScheduler } = require('./services/reminderScheduler');
 const { initCleanupScheduler } = require('./services/cleanupService');
+const { initDraftScheduler } = require('./services/draftScheduler');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -137,6 +138,7 @@ async function startServer() {
     if (process.env.NODE_ENV !== 'test') {
       initScheduler();
       initCleanupScheduler();
+      initDraftScheduler();
     }
     
     app.listen(PORT, () => {

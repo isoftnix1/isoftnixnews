@@ -44,10 +44,10 @@ async function runDailyCleanup() {
       }
     }
 
-    // 3. Delete old notifications (3 days)
+    // 3. Delete old notifications (1 day)
     const deleteOldNotificationsQuery = `
       DELETE FROM notifications 
-      WHERE created_at < NOW() - INTERVAL '3 days'
+      WHERE created_at < NOW() - INTERVAL '1 day'
     `;
     try {
       const result = await client.query(deleteOldNotificationsQuery);
@@ -57,6 +57,22 @@ async function runDailyCleanup() {
         console.log(`[CLEANUP] Table notifications does not exist, skipping.`);
       } else {
         console.warn(`[CLEANUP] Warning: Could not clean notifications: ${err.message}`);
+      }
+    }
+
+    // 4. Delete old scheduler runs (7 days)
+    const deleteSchedulerRunsQuery = `
+      DELETE FROM scheduler_runs 
+      WHERE started_at < NOW() - INTERVAL '7 days'
+    `;
+    try {
+      const runResult = await client.query(deleteSchedulerRunsQuery);
+      console.log(`[CLEANUP] Deleted ${runResult.rowCount} old rows from scheduler_runs.`);
+    } catch (runErr) {
+      if (runErr.code === '42P01') {
+        console.log(`[CLEANUP] Table scheduler_runs does not exist, skipping.`);
+      } else {
+        console.warn(`[CLEANUP] Warning: Could not clean scheduler_runs: ${runErr.message}`);
       }
     }
 

@@ -23,7 +23,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NewsProvider>().loadNews(refresh: true, categoryId: 'all', limit: 50);
+      context.read<NewsProvider>().loadNews(refresh: true, categoryId: 'all', limit: 50, includeDrafts: true);
     });
   }
 
@@ -285,7 +285,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                               if (context.mounted) {
                                 context
                                     .read<NewsProvider>()
-                                    .loadNews(refresh: true, categoryId: 'all', limit: 50);
+                                    .loadNews(refresh: true, categoryId: 'all', limit: 50, includeDrafts: true);
                               }
                             },
                           );

@@ -144,7 +144,7 @@ class ApiService {
     }
   }
 
-  Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10}) async {
+  Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10, bool includeDrafts = false}) async {
     String fmtDate(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -157,6 +157,7 @@ class ApiService {
         'lang': ?lang,
         if (startDate != null) 'startDate': fmtDate(startDate),
         if (endDate != null) 'endDate': fmtDate(endDate),
+        if (includeDrafts) 'includeDrafts': 'true',
       },
     );
     final data = response['data'];
@@ -240,6 +241,10 @@ class ApiService {
 
   Future<void> deleteNotification(String id) async {
     await _request('/notifications/$id', method: 'DELETE');
+  }
+
+  Future<void> markAsRead(String id) async {
+    await _request('/notifications/$id/read', method: 'PUT');
   }
 
   // ---------------------------------------------------------
@@ -370,6 +375,10 @@ class ApiService {
         'password': password,
       },
     );
+  }
+
+  Future<void> rejectPendingDevice(String attemptId) async {
+    await _request('/admin/hardware-lock/pending/$attemptId', method: 'DELETE');
   }
 
   // ---------------------------------------------------------

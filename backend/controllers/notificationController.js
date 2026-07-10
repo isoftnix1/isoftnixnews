@@ -56,8 +56,26 @@ async function deleteNotification(req, res, next) {
   }
 }
 
+async function markAsRead(req, res, next) {
+  try {
+    const notificationId = req.params.id;
+    const userId = req.user.id;
+    
+    if (!notificationId) {
+      return errorResponse(res, 400, 'Notification ID is required');
+    }
+
+    await Notification.markAsRead(notificationId, userId);
+    
+    return successResponse(res, 200, null, 'Notification marked as read');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   registerToken,
   listNotifications,
   deleteNotification,
+  markAsRead,
 };

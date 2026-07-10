@@ -53,6 +53,21 @@ class NotificationProvider extends ChangeNotifier {
     return removed;
   }
 
+  Future<void> markAsRead(String id) async {
+    final index = _notifications.indexWhere((item) => item.id == id);
+    if (index == -1 || _notifications[index].isRead) return;
+
+    // Optimistic UI update
+    _notifications[index] = _notifications[index].copyWith(isRead: true);
+    notifyListeners();
+
+    try {
+      await _apiService.markAsRead(id);
+    } catch (e) {
+      debugPrint('Failed to mark notification as read on server: $e');
+    }
+  }
+
   Future<void> restoreNotification(NotificationModel notification) async {
     // Note: Since we permanently delete from the backend, 'Undo' might fail 
     // if the backend already processed the DELETE. 

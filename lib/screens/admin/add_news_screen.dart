@@ -74,13 +74,38 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
     }
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool isPublished = true}) async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategoryIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one category')),
       );
       return;
+    }
+
+    DateTime? selectedPublishAt;
+    if (!isPublished) {
+      final selectedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      if (selectedDate == null) return; // Cancelled
+
+      final selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (selectedTime == null) return; // Cancelled
+
+      selectedPublishAt = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
     }
 
     setState(() => _isSubmitting = true);
@@ -136,7 +161,9 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
           videoUrl: null,
           categoryIds: _selectedCategoryIds,
           authorName: 'Admin',
+          isPublished: isPublished,
           createdAt: DateTime.now(),
+          publishedAt: selectedPublishAt,
         ),
         imageFile: finalImage,
         videoFile: finalVideo,
@@ -154,10 +181,10 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
     setState(() => _isSubmitting = false);
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('News created and notifications successfully sent to all users!'),
+      SnackBar(
+        content: Text(isPublished ? 'News created and notifications successfully sent to all users!' : 'Draft saved. It will be published by the scheduler.'),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       ),
     );
     
@@ -329,18 +356,29 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
               },
             ),
             const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: _previewNews,
+              child: const Text('Preview News'),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _previewNews,
-                    child: const Text('Preview News'),
+                    onPressed: _isSubmitting ? null : () => _submit(isPublished: false),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save as Draft'),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _isSubmitting ? null : _submit,
+                    onPressed: _isSubmitting ? null : () => _submit(isPublished: true),
                     child: _isSubmitting
                         ? const SizedBox(
                             height: 20,
@@ -348,7 +386,7 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('Save News'),
+                        : const Text('Publish Now'),
                   ),
                 ),
               ],

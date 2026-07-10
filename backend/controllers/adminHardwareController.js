@@ -172,10 +172,32 @@ async function authorizePendingDevice(req, res, next) {
   }
 }
 
+async function rejectPendingDevice(req, res, next) {
+  try {
+    const attemptId = req.params.id;
+    const userId = req.user.sub || req.user.id;
+
+    if (!attemptId) {
+      return errorResponse(res, 400, 'attemptId is required');
+    }
+
+    const { pool } = require('../config/db');
+    await pool.query(`DELETE FROM failed_admin_hardware_attempts WHERE id = $1`, [attemptId]);
+
+    // Optional Audit Log
+    await AuthSecurity.logSecurityEvent(userId, 'admin_hardware_rejected_pending', req.ip, req.headers['user-agent'], { attemptId });
+
+    return successResponse(res, 200, null, 'Attempt successfully deleted');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getHardwareSlots,
   requestHardwareReplacement,
   replaceHardwareSlot,
   getPendingDevices,
-  authorizePendingDevice
+  authorizePendingDevice,
+  rejectPendingDevice
 };
