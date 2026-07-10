@@ -1,39 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/notification_model.dart';
 import '../services/api_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
-  NotificationProvider() {
-    _initDismissedIds();
-  }
-
-  static const _dismissedKey = 'dismissed_notification_ids';
-
   final ApiService _apiService = ApiService();
 
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   String? _errorMessage;
-  Set<String> _dismissedIds = {};
-  bool _dismissedIdsLoaded = false;
 
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
-  Future<void> _initDismissedIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    _dismissedIds = prefs.getStringList(_dismissedKey)?.toSet() ?? {};
-    _dismissedIdsLoaded = true;
-    notifyListeners();
-  }
-
-  Future<void> _saveDismissedIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_dismissedKey, _dismissedIds.toList());
-  }
 
   Future<void> loadNotifications() async {
     _isLoading = true;
@@ -41,14 +20,8 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (!_dismissedIdsLoaded) {
-        await _initDismissedIds();
-      }
-
       final list = await _apiService.getNotifications();
       _notifications = list
-          .where((item) => !_dismissedIds.contains(item.id))
-          .toList()
         ..sort((a, b) {
           final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
           final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -67,16 +40,25 @@ class NotificationProvider extends ChangeNotifier {
     if (index == -1) return null;
 
     final removed = _notifications.removeAt(index);
-    _dismissedIds.add(id);
-    await _saveDismissedIds();
     notifyListeners();
+
+    try {
+      await _apiService.deleteNotification(id);
+    } catch (e) {
+      debugPrint('Failed to delete notification from server: $e');
+      // If server delete fails, you could optionally add it back here
+      // restoreNotification(removed); 
+    }
+
     return removed;
   }
 
   Future<void> restoreNotification(NotificationModel notification) async {
-    _dismissedIds.remove(notification.id);
-    await _saveDismissedIds();
-
+    // Note: Since we permanently delete from the backend, 'Undo' might fail 
+    // if the backend already processed the DELETE. 
+    // For now, we just add it back locally if they press undo.
+    // In a production app, you might delay the API call for 3 seconds to allow for an Undo.
+    
     if (_notifications.any((item) => item.id == notification.id)) return;
 
     _notifications.add(notification);
@@ -88,3 +70,4 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+

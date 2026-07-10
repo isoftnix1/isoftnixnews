@@ -80,6 +80,16 @@ async function getNotificationsForUser(userId, limit = 20) {
   return result.rows;
 }
 
+async function deleteNotificationForUser(notificationId, userId) {
+  const result = await pool.query(
+    `DELETE FROM notifications
+     WHERE id = $1 AND user_id = $2
+     RETURNING *`,
+    [notificationId, userId]
+  );
+  return result.rowCount > 0;
+}
+
 module.exports = {
   registerDeviceToken,
   getTokensForUser,
@@ -87,4 +97,5 @@ module.exports = {
   getTokensGroupedByLanguage,
   createNotification,
   getNotificationsForUser,
+  deleteNotificationForUser,
 };

@@ -35,7 +35,29 @@ async function listNotifications(req, res, next) {
   }
 }
 
+async function deleteNotification(req, res, next) {
+  try {
+    const notificationId = req.params.id;
+    const userId = req.user.id;
+    
+    if (!notificationId) {
+      return errorResponse(res, 400, 'Notification ID is required');
+    }
+
+    const deleted = await Notification.deleteNotificationForUser(notificationId, userId);
+    
+    if (!deleted) {
+      return errorResponse(res, 404, 'Notification not found or already deleted');
+    }
+
+    return successResponse(res, 200, null, 'Notification deleted successfully');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   registerToken,
   listNotifications,
+  deleteNotification,
 };

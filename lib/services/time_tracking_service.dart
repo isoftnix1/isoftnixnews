@@ -14,6 +14,9 @@ class TimeTrackingService with WidgetsBindingObserver {
   Timer? _syncTimer;
   final ApiService _apiService = ApiService();
   
+  // Master Switch for Analytics
+  static const bool USE_MANUAL_ANALYTICS = false;
+  
   // Storage keys
   static const String _kCachedSeconds = 'cached_usage_seconds';
   static const String _kCachedDate = 'cached_usage_date';
@@ -112,8 +115,8 @@ class TimeTrackingService with WidgetsBindingObserver {
     final cachedSeconds = prefs.getInt(_kCachedSeconds) ?? 0;
     final cachedDate = prefs.getString(_kCachedDate);
 
-    // Only sync if we have at least 15 seconds of usage to report
-    if (cachedSeconds >= 15 && cachedDate != null && ApiService.authToken != null) {
+    // Only sync if manual analytics is enabled and we have at least 15 seconds of usage to report
+    if (USE_MANUAL_ANALYTICS && cachedSeconds >= 15 && cachedDate != null && ApiService.authToken != null) {
       try {
         await _apiService.syncUsageTime(cachedDate, cachedSeconds);
         // Clear cache after successful sync

@@ -238,6 +238,10 @@ class ApiService {
     return list.map((e) => NotificationModel.fromJson(e)).toList();
   }
 
+  Future<void> deleteNotification(String id) async {
+    await _request('/notifications/$id', method: 'DELETE');
+  }
+
   // ---------------------------------------------------------
   // Notifications
   // ---------------------------------------------------------

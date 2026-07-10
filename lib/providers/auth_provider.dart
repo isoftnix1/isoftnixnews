@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -37,6 +39,7 @@ class AuthProvider extends ChangeNotifier {
       ApiService.authToken = token;
       final user = await _apiService.getProfile();
       _user = user;
+      FirebaseAnalytics.instance.setUserId(id: user.id);
       _registerFcmToken();
       return true;
     } on SocketException {
@@ -89,6 +92,9 @@ class AuthProvider extends ChangeNotifier {
       }
       
       await _refreshUserProfile();
+      if (_user != null) {
+        FirebaseAnalytics.instance.setUserId(id: _user!.id);
+      }
       // Register FCM token to backend
       _registerFcmToken();
       return true;
@@ -132,6 +138,9 @@ class AuthProvider extends ChangeNotifier {
       }
       
       await _refreshUserProfile();
+      if (_user != null) {
+        FirebaseAnalytics.instance.setUserId(id: _user!.id);
+      }
       // Register FCM token to backend
       _registerFcmToken();
       return true;
@@ -223,6 +232,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     await _apiService.logout();
     _user = null;
+    FirebaseAnalytics.instance.setUserId(id: null);
     _errorMessage = null;
     ApiService.authToken = null;
     await _storage.delete(key: 'auth_token');
@@ -233,6 +243,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logoutAll() async {
     await _apiService.logoutAll();
     _user = null;
+    FirebaseAnalytics.instance.setUserId(id: null);
     _errorMessage = null;
     ApiService.authToken = null;
     await _storage.delete(key: 'auth_token');

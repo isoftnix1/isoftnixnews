@@ -17,6 +17,7 @@ const schedulerRoutes = require('./routes/schedulerRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
 const { initScheduler } = require('./services/reminderScheduler');
+const { initCleanupScheduler } = require('./services/cleanupService');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -135,6 +136,7 @@ async function startServer() {
     // Initialize scheduled tasks
     if (process.env.NODE_ENV !== 'test') {
       initScheduler();
+      initCleanupScheduler();
     }
     
     app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +26,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env.production');
+  await dotenv.load(fileName: '.env.development');
 
   await Firebase.initializeApp();
 
@@ -112,6 +113,9 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> with WidgetsBindingOb
             initialRoute: AppRoutes.splash,
             routes: AppRoutes.routes,
             onGenerateRoute: AppRoutes.onGenerateRoute,
+            navigatorObservers: [
+              FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+            ],
           );
         },
       ),
