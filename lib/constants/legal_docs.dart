@@ -33,6 +33,9 @@ To provide enhanced features, we may request your explicit permission to access 
 *   **Camera and Photo Library:** With your permission, we access your device’s camera and photo gallery to allow you to upload images and videos directly to news articles or your profile.
 *   **Microphone Access:** If you choose to record video footage for news uploads, we will require microphone access to capture the accompanying audio.
 
+### 1.4. Future Services
+Please note that in the future, we plan to introduce additional features including a Payment Wallet, Trade Rates, and Export Rates functionality. When these features are implemented, this Privacy Policy will be updated to reflect the additional financial and transactional data we may collect to facilitate those services.
+
 ---
 
 ## 2. How We Use Your Information

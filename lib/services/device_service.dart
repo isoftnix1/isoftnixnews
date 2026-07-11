@@ -43,7 +43,8 @@ class DeviceService {
       String? locationName;
       if (location != null) {
         try {
-          List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          final geocoding = Geocoding();
+          List<Placemark> placemarks = await geocoding.placemarkFromCoordinates(location.latitude, location.longitude);
           if (placemarks.isNotEmpty) {
             final place = placemarks.first;
             final parts = <String>[];
@@ -103,7 +104,8 @@ class DeviceService {
         data['latitude'] = location.latitude;
         data['longitude'] = location.longitude;
         try {
-          List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          final geocoding = Geocoding();
+          List<Placemark> placemarks = await geocoding.placemarkFromCoordinates(location.latitude, location.longitude);
           if (placemarks.isNotEmpty) {
             final place = placemarks.first;
             final parts = <String>[];
