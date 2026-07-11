@@ -5,14 +5,20 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/news_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../models/ad_model.dart';
+import '../../models/news_model.dart';
 import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/ad_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/corn_loader/corn_loader.dart';
+import '../../widgets/full_screen_ad_widget.dart';
 import 'external_article_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -135,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
 
-                const SizedBox(width: 10), // 👈 ADD THIS
+                const SizedBox(width: 10),
 
                 GestureDetector(
                   onTap: () => _showLanguageBottomSheet(context),
@@ -176,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: () => newsProvider.loadNews(refresh: true),
-        child: newsProvider.isLoading && newsProvider.news.isEmpty
+        child: newsProvider.isLoading && newsProvider.feedItems.isEmpty
             ? const LoadingWidget()
             : Column(
                 children: [
@@ -204,9 +210,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: newsProvider.news.length + 1,
+                      itemCount: newsProvider.feedItems.length + 1,
                       itemBuilder: (context, index) {
-                        if (index == newsProvider.news.length) {
+                        if (index == newsProvider.feedItems.length) {
                           if (!newsProvider.hasMore) {
                             return Padding(
                               padding: const EdgeInsets.all(16),
@@ -219,37 +225,141 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
 
-                        final item = newsProvider.news[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: NewsCard(
-                            news: item,
-                            onTap: () {
-                              final sourceUrl = item.sourceUrl;
-                              if (sourceUrl != null && sourceUrl.isNotEmpty) {
-                                // External article → in-app WebView
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ExternalArticleScreen(
-                                      title: item.title,
-                                      url: sourceUrl,
-                                      newsId: item.id,
+                        final item = newsProvider.feedItems[index];
+
+                        if (item is AdModel) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: VisibilityDetector(
+                              key: Key('ad_${item.id}'),
+                              onVisibilityChanged: (info) {
+                                // Only record a view if at least 50% of the ad is visible
+                                if (info.visibleFraction >= 0.5) {
+                                  AdService().recordAdView(item.id);
+                                }
+                              },
+                              child: GestureDetector(
+                                onTap: () async {
+                                final uri = Uri.parse(item.targetUrl);
+                                if (await canLaunchUrl(uri)) {
+                                  // Record the click
+                                  AdService().recordAdClick(item.id);
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.grey.shade900,
+                                  image: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                                      ? DecorationImage(
+                                          image: NetworkImage(item.imageUrl!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: const LinearGradient(
+                                      colors: [Colors.transparent, Colors.black87],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      stops: [0.5, 1.0],
                                     ),
                                   ),
-                                );
-                              } else {
-                                // Internal article → NewsDetailsScreen
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.newsDetails,
-                                  arguments: item.id,
-                                );
-                              }
-                            },
-
+                                  padding: const EdgeInsets.all(16),
+                                  alignment: Alignment.bottomLeft,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.companyName,
+                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              item.title,
+                                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white24,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text('Sponsored', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              borderRadius: BorderRadius.circular(16),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text('Learn More', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                SizedBox(width: 4),
+                                                Icon(Icons.open_in_new, color: Colors.white, size: 14),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ).animate().fade(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms);
+                        );
+                      }
+
+                        if (item is NewsModel) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: NewsCard(
+                              news: item,
+                              onTap: () {
+                                final sourceUrl = item.sourceUrl;
+                                if (sourceUrl != null && sourceUrl.isNotEmpty) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ExternalArticleScreen(
+                                        title: item.title,
+                                        url: sourceUrl,
+                                        newsId: item.id,
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.newsDetails,
+                                    arguments: item.id,
+                                  );
+                                }
+                              },
+                            ),
+                          ).animate().fade(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms);
+                        }
+                        return const SizedBox.shrink();
                       },
                       controller: _scrollController,
                     ),

@@ -161,7 +161,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: news.imageUrl.isNotEmpty ? 400 : null,
+            expandedHeight: news.imageUrl.isNotEmpty ? 300 : null,
             pinned: true,
             stretch: news.imageUrl.isNotEmpty,
             backgroundColor: bgColor,
@@ -174,13 +174,13 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                         !news.imageUrl.startsWith('http')
                             ? Image.file(
                                 File(news.imageUrl),
-                                fit: BoxFit.cover,
+                                fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Center(child: Icon(Icons.image_not_supported, color: Colors.grey.withValues(alpha: 0.5), size: 40)),
                               )
                             : CachedNetworkImage(
                                 imageUrl: _optimizeCloudinaryUrl(news.imageUrl),
-                                fit: BoxFit.cover,
+                                fit: BoxFit.contain,
                                 placeholder: (context, url) =>
                                     const Center(child: CornLoader(size: 48)),
                                 errorWidget: (context, url, error) =>

@@ -1,3 +1,5 @@
+process.env.TZ = 'UTC'; // Force Node.js to operate in UTC to prevent timestamp shifting with PostgreSQL
+
 require('dotenv').config();
 const validateEnv = require('./utils/validateEnv');
 validateEnv();
@@ -15,6 +17,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const schedulerRoutes = require('./routes/schedulerRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
+const adRoutes = require('./routes/adRoutes');
 const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddleware');
 const { initScheduler } = require('./services/reminderScheduler');
 const { initCleanupScheduler } = require('./services/cleanupService');
@@ -120,6 +123,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/scheduler', adminApiLimiter, schedulerRoutes);
 app.use('/api/device', deviceRoutes);
+app.use('/api/ads', adRoutes);
 
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminApiLimiter, adminRoutes);

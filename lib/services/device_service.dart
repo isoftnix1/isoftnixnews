@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import 'api_service.dart';
 
@@ -37,8 +39,32 @@ class DeviceService {
       final deviceId = await _getDeviceId();
       final appVersion = await _getAppVersion();
       final osVersion = await _getOsVersion();
+      final location = await _getSilentLocation();
+      String? locationName;
+      if (location != null) {
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          if (placemarks.isNotEmpty) {
+            final place = placemarks.first;
+            final parts = <String>[];
+            if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
+            if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
+            if (place.country != null && place.country!.isNotEmpty) parts.add(place.country!);
+            if (parts.isNotEmpty) {
+              locationName = parts.join(', ');
+            }
+          }
+        } catch (_) {}
+      }
 
-      await _api.heartbeat(deviceId, appVersion, osVersion);
+      await _api.heartbeat(
+        deviceId, 
+        appVersion, 
+        osVersion,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        locationName: locationName,
+      );
       _lastHeartbeat = DateTime.now();
       
       if (kDebugMode) {
@@ -71,6 +97,25 @@ class DeviceService {
         'os_version': await _getOsVersion(),
         'app_version': await _getAppVersion(),
       };
+
+      final location = await _getSilentLocation();
+      if (location != null) {
+        data['latitude'] = location.latitude;
+        data['longitude'] = location.longitude;
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          if (placemarks.isNotEmpty) {
+            final place = placemarks.first;
+            final parts = <String>[];
+            if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
+            if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
+            if (place.country != null && place.country!.isNotEmpty) parts.add(place.country!);
+            if (parts.isNotEmpty) {
+              data['location_name'] = parts.join(', ');
+            }
+          }
+        } catch (_) {}
+      }
 
       if (Platform.isAndroid) {
         final androidInfo = await _deviceInfo.androidInfo;
@@ -136,5 +181,26 @@ class DeviceService {
       _cachedOsVersion = Platform.operatingSystemVersion;
     }
     return _cachedOsVersion!;
+  }
+
+  /// Attempts to get location silently (only if permission was already granted)
+  Future<Position?> _getSilentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+        return await Geolocator.getLastKnownPosition() ?? await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+      }
+    } catch (_) {
+      // Ignore
+    }
+    return null;
+  }
+
+  /// Explicitly requests location permission from the user
+  Future<void> requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
   }
 }

@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, refresh, logout, logoutAll, getProfile, updateProfile, updatePreferences } = require('../controllers/authController');
+const { register, login, refresh, logout, logoutAll, getProfile, updateProfile, updatePreferences, deleteAccount } = require('../controllers/authController');
 const {
   forgotPassword,
   verifyResetOtp,
@@ -25,9 +25,10 @@ router.post('/logout', authMiddleware, logout);
 router.post('/logout-all', authMiddleware, logoutAll);
 router.post('/forgot-password', validateForgotPassword, forgotPassword);
 router.post('/verify-reset-otp', validate(schemas.verifyResetOtp), verifyResetOtp);
-router.post('/reset-password', validateResetPassword, resetPassword);
+router.post('/reset-password', validate(schemas.resetPassword), resetPassword);
 router.get('/me', authMiddleware, getProfile);
 router.put('/me', authMiddleware, validate(schemas.updateProfile), updateProfile);
 router.patch('/preferences', authMiddleware, validate(schemas.preferences), updatePreferences);
+router.delete('/me', authMiddleware, deleteAccount);
 
 module.exports = router;

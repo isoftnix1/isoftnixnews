@@ -135,10 +135,10 @@ class NewsModel {
       'reminderSentCount': reminderSentCount,
       'reminder_status': reminderStatus,
       'reminderStatus': reminderStatus,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-      'published_at': publishedAt?.toIso8601String(),
-      'publishedAt': publishedAt?.toIso8601String(),
+      'created_at': createdAt?.toUtc().toIso8601String(),
+      'updated_at': updatedAt?.toUtc().toIso8601String(),
+      'published_at': publishedAt?.toUtc().toIso8601String(),
+      'publishedAt': publishedAt?.toUtc().toIso8601String(),
     };
   }
 

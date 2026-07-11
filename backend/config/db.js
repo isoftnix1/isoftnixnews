@@ -90,6 +90,9 @@ async function initializeDatabase() {
       );
 
       ALTER TABLE failed_admin_hardware_attempts ADD COLUMN IF NOT EXISTS device_info JSONB;
+      
+      ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS views_count INT NOT NULL DEFAULT 0;
+      ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS clicks_count INT NOT NULL DEFAULT 0;
     `);
   } finally {
     client.release();

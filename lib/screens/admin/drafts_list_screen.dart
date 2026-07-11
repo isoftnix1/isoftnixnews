@@ -7,14 +7,14 @@ import '../../providers/news_provider.dart';
 import '../../routes/app_routes.dart';
 import 'news_analytics_dialog.dart';
 
-class NewsListScreen extends StatefulWidget {
-  const NewsListScreen({super.key});
+class DraftsListScreen extends StatefulWidget {
+  const DraftsListScreen({super.key});
 
   @override
-  State<NewsListScreen> createState() => _NewsListScreenState();
+  State<DraftsListScreen> createState() => _DraftsListScreenState();
 }
 
-class _NewsListScreenState extends State<NewsListScreen> {
+class _DraftsListScreenState extends State<DraftsListScreen> {
   final Set<String> _selectedIds = {};
 
   bool get _hasSelection => _selectedIds.isNotEmpty;
@@ -23,7 +23,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NewsProvider>().loadNews(refresh: true, categoryId: 'all', limit: 50);
+      context.read<NewsProvider>().loadNews(refresh: true, categoryId: 'all', limit: 50, onlyDrafts: true);
     });
   }
 
@@ -159,7 +159,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_hasSelection ? 'Selected: ${_selectedIds.length}' : 'Manage News'),
+        title: Text(_hasSelection ? 'Selected: ${_selectedIds.length}' : 'Manage Drafts'),
         actions: [
           if (_hasSelection)
             TextButton.icon(
@@ -266,8 +266,8 @@ class _NewsListScreenState extends State<NewsListScreen> {
                             const SizedBox(height: 12),
                             Text(
                               provider.isDateFiltered
-                                  ? 'No news in the selected date range.'
-                                  : 'No news articles found.',
+                                  ? 'No drafts in the selected date range.'
+                                  : 'No drafts found.',
                               style: TextStyle(color: Colors.grey.shade600),
                             ),
                           ],
@@ -285,7 +285,7 @@ class _NewsListScreenState extends State<NewsListScreen> {
                               if (context.mounted) {
                                 context
                                     .read<NewsProvider>()
-                                    .loadNews(refresh: true, categoryId: 'all', limit: 50);
+                                    .loadNews(refresh: true, categoryId: 'all', limit: 50, onlyDrafts: true);
                               }
                             },
                           );

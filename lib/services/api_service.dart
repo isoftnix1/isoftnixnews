@@ -144,7 +144,7 @@ class ApiService {
     }
   }
 
-  Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10, bool includeDrafts = false}) async {
+  Future<List<NewsModel>> getNews({String? categoryId, int page = 1, String? lang, DateTime? startDate, DateTime? endDate, int limit = 10, bool includeDrafts = false, bool onlyDrafts = false}) async {
     String fmtDate(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -154,10 +154,11 @@ class ApiService {
         if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') 'categoryId': categoryId,
         'page': page.toString(),
         'limit': limit.toString(),
-        'lang': ?lang,
+        if (lang != null) 'lang': lang,
         if (startDate != null) 'startDate': fmtDate(startDate),
         if (endDate != null) 'endDate': fmtDate(endDate),
         if (includeDrafts) 'includeDrafts': 'true',
+        if (onlyDrafts) 'onlyDrafts': 'true',
       },
     );
     final data = response['data'];
@@ -174,7 +175,7 @@ class ApiService {
     final response = await _request(
       '/news/$id',
       queryParameters: {
-        'lang': ?lang,
+        if (lang != null) 'lang': lang,
       },
     );
     return NewsModel.fromJson(response['data']);
@@ -283,11 +284,14 @@ class ApiService {
     }
   }
 
-  Future<void> heartbeat(String deviceId, String? appVersion, String? osVersion) async {
+  Future<void> heartbeat(String deviceId, String? appVersion, String? osVersion, {double? latitude, double? longitude, String? locationName}) async {
     try {
       final body = <String, dynamic>{'device_id': deviceId};
       if (appVersion != null) body['app_version'] = appVersion;
       if (osVersion != null) body['os_version'] = osVersion;
+      if (latitude != null) body['latitude'] = latitude;
+      if (longitude != null) body['longitude'] = longitude;
+      if (locationName != null) body['location_name'] = locationName;
 
       await _request(
         '/device/heartbeat',
@@ -419,6 +423,10 @@ class ApiService {
     return UserModel.fromJson(response['data']['user']);
   }
 
+  Future<void> deleteAccount() async {
+    await _request('/auth/me', method: 'DELETE');
+  }
+
   Future<void> forgotPassword(String email) async {
     await _request(
       '/auth/forgot-password',
@@ -546,7 +554,7 @@ class ApiService {
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       };
 
-      final timeoutDuration = const Duration(seconds: 15);
+      final timeoutDuration = const Duration(seconds: 30);
       final startTime = DateTime.now();
 
       switch (method) {
@@ -651,6 +659,9 @@ class ApiService {
       request.fields['categoryIds[${news.categoryIds.indexOf(catId)}]'] = catId;
     }
     request.fields['isPublished'] = news.isPublished.toString();
+    if (news.publishedAt != null) {
+      request.fields['publishedAt'] = news.publishedAt!.toUtc().toIso8601String();
+    }
     if (news.imageUrl.isNotEmpty) {
       request.fields['imageUrl'] = news.imageUrl;
     }

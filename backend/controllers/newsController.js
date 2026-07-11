@@ -24,11 +24,13 @@ async function listNews(req, res, next) {
     const lang = req.query.lang || 'en';
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;
-    const includeDrafts = req.query.includeDrafts === 'true';
+    const includeDrafts = req.query.includeDrafts === 'true' || req.query.includeDrafts === true;
+    const onlyDrafts = req.query.onlyDrafts === 'true' || req.query.onlyDrafts === true;
     const isAdmin = req.user?.role === 'admin';
     const shouldIncludeDrafts = isAdmin && includeDrafts;
+    const shouldOnlyDrafts = isAdmin && onlyDrafts;
 
-    const cacheKey = `news_page_${page}_limit_${limit}_search_${search}_cat_${categoryId}_lang_${lang}_start_${startDate}_end_${endDate}_drafts_${shouldIncludeDrafts}`;
+    const cacheKey = `news_page_${page}_limit_${limit}_search_${search}_cat_${categoryId}_lang_${lang}_start_${startDate}_end_${endDate}_drafts_${shouldIncludeDrafts}_only_${shouldOnlyDrafts}`;
 
     // 1. Check Cache
     const cachedNews = cache.getCache(cacheKey);
@@ -43,7 +45,8 @@ async function listNews(req, res, next) {
       categoryId,
       startDate,
       endDate,
-      publishedOnly: !shouldIncludeDrafts,
+      publishedOnly: !shouldIncludeDrafts && !shouldOnlyDrafts,
+      onlyDrafts: shouldOnlyDrafts,
     });
 
     // Map language specific columns to 'title' and 'content' for the response
@@ -309,6 +312,7 @@ async function updateNews(req, res, next) {
       source_name: req.body.source_name === '' ? null : req.body.source_name,
       source_url: req.body.source_url === '' ? null : req.body.source_url,
       is_published: req.body.isPublished,
+      published_at: req.body.publishedAt,
     };
 
     if (imageFile) {

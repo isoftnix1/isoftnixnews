@@ -153,6 +153,14 @@ class AppDrawer extends StatelessWidget {
                       }
                     },
                   ),
+                _DrawerItem(
+                  icon: Icons.settings_rounded,
+                  title: AppLocalizations.of(context, 'settings'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, AppRoutes.settings);
+                  },
+                ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
                   child: Divider(height: 1),

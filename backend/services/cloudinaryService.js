@@ -8,6 +8,11 @@ async function uploadToCloudinary(file, folder = 'news') {
       {
         folder,
         resource_type: 'auto',
+        // Apply heavy compression, cap resolution at 720p (perfect for mobile), and cap video framerate to 30fps
+        transformation: [
+          { width: 720, height: 1280, crop: 'limit', fps: '30-' }, 
+          { quality: 'auto:eco', fetch_format: 'auto', video_codec: 'auto' } 
+        ],
       },
       (error, uploaded) => {
         if (error) return reject(error);

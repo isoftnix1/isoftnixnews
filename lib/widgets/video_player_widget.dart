@@ -4,7 +4,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String url;
-  const VideoPlayerWidget({super.key, required this.url});
+  final bool autoPlay;
+  const VideoPlayerWidget({super.key, required this.url, this.autoPlay = false});
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -36,6 +37,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
       
       await _controller!.initialize();
+      if (widget.autoPlay) {
+        _controller!.setLooping(true);
+        _controller!.play();
+      }
       _controller!.addListener(() {
         if (mounted) setState(() {});
       });

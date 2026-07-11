@@ -1,7 +1,7 @@
 const { randomUUID } = require('crypto');
 const { pool } = require('../config/db');
 
-async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = null, startDate = null, endDate = null, publishedOnly = false }) {
+async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = null, startDate = null, endDate = null, publishedOnly = false, onlyDrafts = false }) {
   const offset = (page - 1) * limit;
   const whereClauses = [];
   const values = [];
@@ -9,6 +9,10 @@ async function getNewsPage({ page = 1, limit = 10, search = '', categoryId = nul
 
   if (publishedOnly) {
     whereClauses.push('n.is_published = true');
+  }
+
+  if (onlyDrafts) {
+    whereClauses.push('n.is_published = false');
   }
 
   if (search) {

@@ -103,6 +103,14 @@ async function completePasswordReset(userId, passwordHash) {
   );
 }
 
+async function deleteUser(id) {
+  const result = await pool.query(
+    'DELETE FROM users WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rowCount > 0;
+}
+
 module.exports = {
   createUser,
   findByEmail,
@@ -114,4 +122,5 @@ module.exports = {
   clearPasswordResetOtp,
   findByEmailForPasswordReset,
   completePasswordReset,
+  deleteUser,
 };

@@ -3,7 +3,7 @@ const deviceService = require('../services/deviceService');
 
 async function registerDevice(req, res, next) {
   try {
-    const { fcm_token, device_id, device_name, manufacturer, model, platform, os_version, app_version } = req.body;
+    const { fcm_token, device_id, device_name, manufacturer, model, platform, os_version, app_version, latitude, longitude, location_name } = req.body;
     const userId = req.user.id;
 
     const device = await deviceService.registerDevice({
@@ -15,7 +15,10 @@ async function registerDevice(req, res, next) {
       model,
       platform,
       osVersion: os_version,
-      appVersion: app_version
+      appVersion: app_version,
+      latitude,
+      longitude,
+      location_name
     });
 
     return successResponse(res, 200, device, 'Device registered successfully');
@@ -27,10 +30,10 @@ async function registerDevice(req, res, next) {
 
 async function heartbeat(req, res, next) {
   try {
-    const { device_id, app_version, os_version } = req.body;
+    const { device_id, app_version, os_version, latitude, longitude, location_name } = req.body;
     const userId = req.user.id;
 
-    const device = await deviceService.heartbeat(userId, device_id, app_version, os_version);
+    const device = await deviceService.heartbeat(userId, device_id, app_version, os_version, latitude, longitude, location_name);
     
     if (!device) {
       return errorResponse(res, 404, 'Device not found, please register first');

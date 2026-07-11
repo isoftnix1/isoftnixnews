@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/validators.dart';
+import 'package:flutter/gestures.dart';
+import '../../constants/legal_docs.dart';
+import '../user/policy_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,6 +32,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _openPolicy(String title, String content) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyScreen(title: title, mdContent: content),
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -223,7 +235,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ).animate().fade().slideY(begin: -0.1),
                     ],
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+
+                    // Legal Consent
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                height: 1.5,
+                              ),
+                          children: [
+                            const TextSpan(text: 'By creating an account, you agree to our '),
+                            TextSpan(
+                              text: 'Terms and Conditions',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _openPolicy('Terms and Conditions', LegalDocs.termsAndConditions),
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _openPolicy('Privacy Policy', LegalDocs.privacyPolicy),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ).animate().fade().slideY(begin: 0.1, duration: 400.ms, delay: 350.ms),
+                    ),
+
+                    const SizedBox(height: 24),
 
                     // ── Actions ─────────────────────────────────────────────
                     ElevatedButton(

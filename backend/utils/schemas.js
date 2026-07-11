@@ -169,6 +169,8 @@ const newsQuery = Joi.object({
   lang,
   startDate: Joi.string().isoDate().optional().allow('', null),
   endDate: Joi.string().isoDate().optional().allow('', null),
+  includeDrafts: Joi.alternatives().try(Joi.boolean(), Joi.string().valid('true', 'false')).optional(),
+  onlyDrafts: Joi.alternatives().try(Joi.boolean(), Joi.string().valid('true', 'false')).optional(),
 });
 
 // ─────────────────────────────────────────────
@@ -208,12 +210,18 @@ const registerDeviceSchema = Joi.object({
   platform: Joi.string().trim().required(),
   os_version: Joi.string().trim().optional().allow('', null),
   app_version: Joi.string().trim().optional().allow('', null),
+  latitude: Joi.number().optional().allow(null),
+  longitude: Joi.number().optional().allow(null),
+  location_name: Joi.string().optional().allow(null, ''),
 });
 
 const heartbeatSchema = Joi.object({
   device_id: Joi.string().trim().required().messages({ 'string.empty': 'Device ID is required' }),
   app_version: Joi.string().trim().optional().allow('', null),
   os_version: Joi.string().trim().optional().allow('', null),
+  latitude: Joi.number().optional().allow(null),
+  longitude: Joi.number().optional().allow(null),
+  location_name: Joi.string().optional().allow(null, ''),
 });
 
 // ─────────────────────────────────────────────

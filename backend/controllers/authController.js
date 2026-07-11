@@ -462,6 +462,25 @@ async function updatePreferences(req, res, next) {
   }
 }
 
+async function deleteAccount(req, res, next) {
+  try {
+    const userId = req.user.sub || req.user.id;
+    
+    // Revoke all tokens to immediately kill active sessions
+    await AuthSecurity.revokeAllRefreshTokens(userId);
+    
+    // Delete user from the database (Cascades will handle related tables like user_devices, notifications, etc.)
+    const deleted = await User.deleteUser(userId);
+    
+    if (!deleted) return errorResponse(res, 404, 'User not found');
+    
+    // Anonymized in security_logs and news, so no action needed there
+    return successResponse(res, 200, null, 'Account and all associated data successfully deleted');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -471,4 +490,5 @@ module.exports = {
   getProfile,
   updateProfile,
   updatePreferences,
+  deleteAccount,
 };

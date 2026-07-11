@@ -5,8 +5,8 @@ async function registerDevice(data) {
   return await UserDevice.upsertDevice(data);
 }
 
-async function heartbeat(userId, deviceId, appVersion, osVersion) {
-  return await UserDevice.heartbeat(userId, deviceId, appVersion, osVersion);
+async function heartbeat(userId, deviceId, appVersion, osVersion, latitude, longitude, location_name) {
+  return await UserDevice.heartbeat(userId, deviceId, appVersion, osVersion, latitude, longitude, location_name);
 }
 
 async function getAdminDeviceList(filters) {

@@ -94,13 +94,41 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
     }
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool? isPublished, bool reschedule = false}) async {
     if (!_formKey.currentState!.validate() || _news == null) return;
     if (_selectedCategoryIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one category')),
       );
       return;
+    }
+
+    DateTime? finalPublishedAt = _news!.publishedAt;
+    
+    if (reschedule && isPublished == false) {
+      final selectedDate = await showDatePicker(
+        context: context,
+        initialDate: _news!.publishedAt ?? DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      if (selectedDate == null) return; // Cancelled
+
+      final selectedTime = await showTimePicker(
+        context: context,
+        initialTime: _news!.publishedAt != null ? TimeOfDay.fromDateTime(_news!.publishedAt!) : TimeOfDay.now(),
+      );
+      if (selectedTime == null) return; // Cancelled
+
+      finalPublishedAt = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
+    } else if (isPublished == true) {
+       finalPublishedAt = DateTime.now();
     }
 
     setState(() => _isSubmitting = true);
@@ -158,6 +186,8 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
           authorName: _news!.authorName,
           createdAt: _news!.createdAt,
           updatedAt: DateTime.now(),
+          publishedAt: finalPublishedAt,
+          isPublished: isPublished ?? _news!.isPublished,
         ),
         imageFile: finalImage,
         videoFile: finalVideo,
@@ -363,30 +393,63 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
               },
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _previewNews,
-                    child: const Text('Preview News'),
+            const SizedBox(height: 24),
+            if (_news!.isPublished == false) ...[
+              OutlinedButton(
+                onPressed: _previewNews,
+                child: const Text('Preview News'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSubmitting ? null : () => _submit(isPublished: false, reschedule: false),
+                      child: const Text('Update Content'),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _isSubmitting ? null : _submit,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Update News'),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSubmitting ? null : () => _submit(isPublished: false, reschedule: true),
+                      child: const Text('Reschedule'),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _isSubmitting ? null : () => _submit(isPublished: true),
+                child: _isSubmitting
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Publish Now'),
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _previewNews,
+                      child: const Text('Preview News'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _isSubmitting ? null : () => _submit(),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Update News'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

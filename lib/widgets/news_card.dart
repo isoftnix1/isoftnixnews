@@ -36,7 +36,7 @@ class NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = news.createdAt ?? DateTime.now();
+    final date = news.publishedAt ?? news.createdAt ?? DateTime.now();
     final timeAgoText = _timeAgo(date);
 
     return Container(

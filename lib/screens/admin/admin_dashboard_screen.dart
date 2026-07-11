@@ -61,6 +61,13 @@ class AdminDashboardScreen extends StatelessWidget {
               delay: 500,
             ),
             _DashboardAction(
+              title: 'Manage\nDrafts',
+              icon: Icons.edit_document,
+              color: Colors.amber,
+              route: AppRoutes.adminDraftsList,
+              delay: 550,
+            ),
+            _DashboardAction(
               title: 'Manage\nCategories',
               icon: Icons.category_rounded,
               color: Colors.orange,
@@ -87,6 +94,13 @@ class AdminDashboardScreen extends StatelessWidget {
               color: Colors.teal,
               route: AppRoutes.adminAnalytics,
               delay: 900,
+            ),
+            _DashboardAction(
+              title: 'Manage\nAds',
+              icon: Icons.campaign_rounded,
+              color: Colors.indigo,
+              route: AppRoutes.adminAds,
+              delay: 1000,
             ),
           ];
 

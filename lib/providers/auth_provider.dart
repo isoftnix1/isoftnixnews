@@ -41,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
       _user = user;
       FirebaseAnalytics.instance.setUserId(id: user.id);
       _registerFcmToken();
+      DeviceService().requestLocationPermission();
       return true;
     } on SocketException {
       // Network is unreachable — the stored token is still valid.
@@ -97,6 +98,7 @@ class AuthProvider extends ChangeNotifier {
       }
       // Register FCM token to backend
       _registerFcmToken();
+      DeviceService().requestLocationPermission();
       return true;
     } catch (e) {
       _errorMessage = _cleanError(e);
@@ -143,6 +145,7 @@ class AuthProvider extends ChangeNotifier {
       }
       // Register FCM token to backend
       _registerFcmToken();
+      DeviceService().requestLocationPermission();
       return true;
     } catch (e) {
       _errorMessage = _cleanError(e);
@@ -249,6 +252,31 @@ class AuthProvider extends ChangeNotifier {
     await _storage.delete(key: 'auth_token');
     await _storage.delete(key: 'refresh_token');
     notifyListeners();
+  }
+
+  Future<bool> deleteAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.deleteAccount();
+      
+      // Clear all local session data
+      _user = null;
+      FirebaseAnalytics.instance.setUserId(id: null);
+      ApiService.authToken = null;
+      await _storage.delete(key: 'auth_token');
+      await _storage.delete(key: 'refresh_token');
+      
+      return true;
+    } catch (e) {
+      _errorMessage = _cleanError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> refreshProfile() async {

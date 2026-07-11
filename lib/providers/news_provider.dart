@@ -4,12 +4,17 @@ import 'package:flutter/material.dart';
 
 import '../models/category_model.dart';
 import '../models/news_model.dart';
+import '../models/ad_model.dart';
 import '../services/api_service.dart';
+import '../services/ad_service.dart';
 
 class NewsProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final AdService _adService = AdService();
 
   List<NewsModel> _news = [];
+  List<AdModel> _activeAds = [];
+  List<dynamic> _feedItems = [];
   List<CategoryModel> _categories = [];
   bool _isLoadingNews = false;
   bool _isLoadingCategories = false;
@@ -20,8 +25,10 @@ class NewsProvider extends ChangeNotifier {
   int _page = 1;
   DateTime? _selectedStartDate;
   DateTime? _selectedEndDate;
+  bool _onlyDrafts = false;
 
   List<NewsModel> get news => _news;
+  List<dynamic> get feedItems => _feedItems;
   List<CategoryModel> get categories => _categories;
   bool get isLoading => _isLoadingNews || _isLoadingCategories;
   bool get hasMore => _hasMore;
@@ -51,11 +58,12 @@ class NewsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadNews({bool refresh = false, String? categoryId, String? lang, int limit = 10, bool includeDrafts = false}) async {
+  Future<void> loadNews({bool refresh = false, String? categoryId, String? lang, int limit = 10, bool includeDrafts = false, bool onlyDrafts = false}) async {
     if (refresh) {
       _page = 1;
       _hasMore = true;
       _news = [];
+      _onlyDrafts = onlyDrafts;
     }
 
     if (!_hasMore || _isLoadingNews) return;
@@ -79,13 +87,20 @@ class NewsProvider extends ChangeNotifier {
         endDate: _selectedEndDate,
         limit: limit,
         includeDrafts: includeDrafts,
+        onlyDrafts: refresh ? onlyDrafts : _onlyDrafts,
       );
 
       if (refresh || _page == 1) {
         _news = items;
+        // Fetch ads on first load
+        try {
+          _activeAds = await _adService.getActiveAds();
+        } catch (_) {}
       } else {
         _news.addAll(items);
       }
+      
+      _buildFeedItems();
 
       _hasMore = items.length >= 10;
       _errorMessage = null;
@@ -94,6 +109,21 @@ class NewsProvider extends ChangeNotifier {
     } finally {
       _isLoadingNews = false;
       notifyListeners();
+    }
+  }
+
+  void _buildFeedItems() {
+    _feedItems = [];
+    int adIndex = 0;
+    
+    for (int i = 0; i < _news.length; i++) {
+      _feedItems.add(_news[i]);
+      
+      // Inject an ad every 2 articles (after the 2nd, 4th, etc.)
+      if ((i + 1) % 2 == 0 && _activeAds.isNotEmpty) {
+        _feedItems.add(_activeAds[adIndex % _activeAds.length]);
+        adIndex++;
+      }
     }
   }
 
