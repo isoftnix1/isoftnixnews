@@ -13,8 +13,10 @@ class KeepAliveService {
   void start() {
     // Ping immediately on start so first login is always fast.
     _ping();
-    // Then ping every 10 minutes (Render sleeps after 15 min idle).
-    _timer ??= Timer.periodic(const Duration(minutes: 10), (_) => _ping());
+    // Ping every 5 minutes for a safe buffer against Render's 15-minute idle sleep.
+    // This means even if one ping fails (e.g., brief network drop), the next one
+    // arrives well before the 15-minute sleep window closes.
+    _timer ??= Timer.periodic(const Duration(minutes: 5), (_) => _ping());
   }
 
   void stop() {

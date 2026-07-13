@@ -114,6 +114,7 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
       );
       if (selectedDate == null) return; // Cancelled
 
+      if (!mounted) return;
       final selectedTime = await showTimePicker(
         context: context,
         initialTime: _news!.publishedAt != null ? TimeOfDay.fromDateTime(_news!.publishedAt!) : TimeOfDay.now(),
@@ -165,6 +166,7 @@ class _EditNewsScreenState extends State<EditNewsScreen> {
     }
 
     _showProgressDialog('Updating...');
+    if (!mounted) return;
     final provider = context.read<NewsProvider>();
     try {
       await provider.updateNews(

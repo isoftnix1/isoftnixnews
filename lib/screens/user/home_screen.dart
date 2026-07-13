@@ -18,7 +18,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/corn_loader/corn_loader.dart';
-import '../../widgets/full_screen_ad_widget.dart';
+
 import 'external_article_screen.dart';
 
 class HomeScreen extends StatefulWidget {

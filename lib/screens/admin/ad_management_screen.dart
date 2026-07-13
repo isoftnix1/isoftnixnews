@@ -165,7 +165,7 @@ class _AdManagementScreenState extends State<AdManagementScreen> {
                                       await _adService.deleteAd(ad.id);
                                       _fetchAds();
                                     } catch (e) {
-                                      if (mounted) {
+                                      if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
                                       }
                                     }

@@ -103,6 +103,7 @@ async function publishPendingDrafts() {
 function initDraftScheduler() {
   console.log('🕒 Initializing Draft Scheduler (Runs every minute to check scheduled drafts)');
 
+  // Regular every-minute cron — runs reliably 24/7 on Render Starter plan
   cron.schedule('* * * * *', () => {
     publishPendingDrafts();
   });

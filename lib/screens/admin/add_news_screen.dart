@@ -93,6 +93,7 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
       );
       if (selectedDate == null) return; // Cancelled
 
+      if (!mounted) return;
       final selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.now(),
@@ -142,6 +143,7 @@ class _AddNewsScreenState extends State<AddNewsScreen> {
     }
 
     _showProgressDialog('Uploading...');
+    if (!mounted) return;
     final provider = context.read<NewsProvider>();
     try {
       await provider.addNews(
