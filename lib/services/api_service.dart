@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -226,8 +227,20 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getNewsAnalytics(String id) async {
-    final response = await _request('/news/$id/analytics');
+    final response = await _request('/analytics/news/$id');
     return response['data'] as Map<String, dynamic>? ?? {};
+  }
+
+  Future<String> getVoiceSummary(String command, {String lang = 'en'}) async {
+    final response = await _request(
+      '/voice/summary',
+      method: 'POST',
+      body: {
+        'command': command,
+        'lang': lang,
+      },
+    );
+    return response['data']['summary'];
   }
 
   Future<UserModel> getProfile() async {
@@ -606,13 +619,42 @@ class ApiService {
             : 'Something went wrong. Please try again.';
         throw Exception(message);
       }
+
+      // CACHING SUCCESSFUL GET REQUESTS
+      if (method == 'GET') {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cache_$uri', response.body);
+        } catch (_) {}
+      }
+
       return decoded is Map<String, dynamic> ? decoded : {'data': decoded};
     } on TimeoutException catch (e, stack) {
+      if (method == 'GET') {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final cached = prefs.getString('cache_$uri');
+          if (cached != null) {
+            final decoded = jsonDecode(cached);
+            return decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+          }
+        } catch (_) {}
+      }
       if (kDebugMode) {
         debugPrint('[API ERROR] TimeoutException for $uri: $e\n$stack');
       }
       throw Exception('The server took too long to respond. Please try again.');
     } on SocketException catch (e, stack) {
+      if (method == 'GET') {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final cached = prefs.getString('cache_$uri');
+          if (cached != null) {
+            final decoded = jsonDecode(cached);
+            return decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+          }
+        } catch (_) {}
+      }
       if (kDebugMode) {
         debugPrint('[API ERROR] SocketException for $uri: $e\n$stack');
       }
@@ -719,4 +761,31 @@ class ApiService {
     }
   }
 
+  // --- Conversational AI Chat ---
+
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String message,
+    required String lang,
+    String? conversationId,
+  }) async {
+    final body = {
+      'message': message,
+      'lang': lang,
+    };
+    if (conversationId != null) {
+      body['conversationId'] = conversationId;
+    }
+    final response = await _request('/chat/message', method: 'POST', body: body);
+    return response['data'];
+  }
+
+  Future<List<dynamic>> getChatHistory() async {
+    final response = await _request('/chat/history');
+    return response['data'] as List<dynamic>;
+  }
+
+  Future<List<dynamic>> getChatMessages(String conversationId) async {
+    final response = await _request('/chat/$conversationId/messages');
+    return response['data'] as List<dynamic>;
+  }
 }

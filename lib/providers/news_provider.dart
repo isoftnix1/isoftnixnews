@@ -63,7 +63,16 @@ class NewsProvider extends ChangeNotifier {
       _page = 1;
       _hasMore = true;
       _news = [];
+      _feedItems = []; // Clear feed items so UI shows full loading symbol
       _onlyDrafts = onlyDrafts;
+    }
+
+    // Update selected states BEFORE notifyListeners so UI (like category chips) update instantly
+    if (categoryId != null) {
+      _selectedCategoryId = categoryId;
+    }
+    if (lang != null) {
+      _currentLang = lang;
     }
 
     if (!_hasMore || _isLoadingNews) return;
@@ -72,12 +81,6 @@ class NewsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (categoryId != null) {
-        _selectedCategoryId = categoryId;
-      }
-      if (lang != null) {
-        _currentLang = lang;
-      }
 
       final items = await _apiService.getNews(
         categoryId: _selectedCategoryId == 'all' ? null : _selectedCategoryId,

@@ -73,12 +73,18 @@ class AdService {
   }
 
   Future<void> recordAdView(String id) async {
+    final token = ApiService.authToken;
+    if (token == null) return; // Only track logged-in users
+    
     if (_viewedAds.contains(id)) return;
     
     try {
       _viewedAds.add(id);
       final uri = Uri.parse('${ApiConfig.baseUrl}/ads/$id/view');
-      await http.post(uri).timeout(const Duration(seconds: 5));
+      await http.post(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 5));
     } catch (e) {
       // Fail silently to not disrupt UX
       _viewedAds.remove(id); // Retry next time if it failed
@@ -86,9 +92,15 @@ class AdService {
   }
 
   Future<void> recordAdClick(String id) async {
+    final token = ApiService.authToken;
+    if (token == null) return; // Only track logged-in users
+
     try {
       final uri = Uri.parse('${ApiConfig.baseUrl}/ads/$id/click');
-      await http.post(uri).timeout(const Duration(seconds: 5));
+      await http.post(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 5));
     } catch (e) {
       // Fail silently
     }

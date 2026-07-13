@@ -239,7 +239,8 @@ async function createNews(req, res, next) {
             tokens,
             title || 'New Article',
             trimmedBody,
-            { newsId: savedNews.id }
+            { newsId: savedNews.id },
+            savedNews.image_url
           );
         }
       };

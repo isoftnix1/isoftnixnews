@@ -48,6 +48,8 @@ class DeviceService {
           if (placemarks.isNotEmpty) {
             final place = placemarks.first;
             final parts = <String>[];
+            if (place.street != null && place.street!.isNotEmpty) parts.add(place.street!);
+            if (place.subLocality != null && place.subLocality!.isNotEmpty) parts.add(place.subLocality!);
             if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
             if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
             if (place.country != null && place.country!.isNotEmpty) parts.add(place.country!);
@@ -109,6 +111,8 @@ class DeviceService {
           if (placemarks.isNotEmpty) {
             final place = placemarks.first;
             final parts = <String>[];
+            if (place.street != null && place.street!.isNotEmpty) parts.add(place.street!);
+            if (place.subLocality != null && place.subLocality!.isNotEmpty) parts.add(place.subLocality!);
             if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
             if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
             if (place.country != null && place.country!.isNotEmpty) parts.add(place.country!);

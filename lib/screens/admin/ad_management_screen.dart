@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/ad_model.dart';
 import '../../services/ad_service.dart';
@@ -102,7 +103,7 @@ class _AdManagementScreenState extends State<AdManagementScreen> {
                                   ),
                                   image: ad.imageUrl != null && ad.imageUrl!.isNotEmpty
                                       ? DecorationImage(
-                                          image: NetworkImage(ad.imageUrl!),
+                                          image: CachedNetworkImageProvider(ad.imageUrl!),
                                           fit: BoxFit.cover,
                                         )
                                       : null,

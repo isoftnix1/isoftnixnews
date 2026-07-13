@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import '../chat/personal_chat_screen.dart';
+import '../chat/community_chat_screen.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/news_provider.dart';
@@ -11,6 +15,7 @@ import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/ad_service.dart';
+import '../../services/voice_assistant_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../widgets/category_chip.dart';
@@ -180,6 +185,73 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: const AppDrawer(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Consumer<VoiceAssistantService>(
+        builder: (context, voiceService, _) {
+          if (voiceService.isListening || voiceService.isProcessing || voiceService.isSpeaking) {
+            return FloatingActionButton(
+              onPressed: () async {
+                if (voiceService.isSpeaking) {
+                  await voiceService.stopSpeaking();
+                } else if (voiceService.isListening) {
+                  voiceService.stopListening();
+                }
+              },
+              backgroundColor: voiceService.isListening ? Colors.red : Colors.orange,
+              child: Icon(
+                voiceService.isListening ? Icons.mic : (voiceService.isProcessing ? Icons.hourglass_empty : Icons.stop),
+                color: Colors.white,
+              ),
+            );
+          }
+
+          return SpeedDial(
+            icon: Icons.auto_awesome,
+            activeIcon: Icons.close,
+            spacing: 3,
+            backgroundColor: Colors.green.shade700,
+            foregroundColor: Colors.yellowAccent,
+            activeBackgroundColor: Colors.red,
+            activeForegroundColor: Colors.white,
+            elevation: 8.0,
+            animationCurve: Curves.elasticInOut,
+            isOpenOnStart: false,
+            children: [
+              SpeedDialChild(
+                child: const Icon(Icons.mic_none, color: Colors.white),
+                backgroundColor: Colors.green,
+                label: 'Voice Assistant',
+                onTap: () async {
+                  final currentLang = context.read<LanguageProvider>().currentLanguage;
+                  await voiceService.startListening(currentLang);
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.person, color: Colors.white),
+                backgroundColor: Colors.blue,
+                label: 'Personal Agri-Bot',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PersonalChatScreen()),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.people, color: Colors.white),
+                backgroundColor: Colors.purple,
+                label: 'Community Chat',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CommunityChatScreen()),
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
       body: RefreshIndicator(
         onRefresh: () => newsProvider.loadNews(refresh: true),
         child: newsProvider.isLoading && newsProvider.feedItems.isEmpty
@@ -254,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.grey.shade900,
                                   image: item.imageUrl != null && item.imageUrl!.isNotEmpty
                                       ? DecorationImage(
-                                          image: NetworkImage(item.imageUrl!),
+                                          image: CachedNetworkImageProvider(item.imageUrl!),
                                           fit: BoxFit.cover,
                                         )
                                       : null,

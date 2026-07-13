@@ -86,12 +86,24 @@ async function deleteAd(req, res, next) {
 async function recordAdView(req, res, next) {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+
+    // Only update if the user isn't already in the array
     const result = await pool.query(
-      'UPDATE advertisements SET views_count = views_count + 1 WHERE id = $1 RETURNING views_count',
-      [id]
+      `UPDATE advertisements 
+       SET views_count = views_count + 1, 
+           viewed_by_users = array_append(viewed_by_users, $2)
+       WHERE id = $1 AND NOT ($2 = ANY(viewed_by_users)) 
+       RETURNING views_count`,
+      [id, userId]
     );
+
+    // If rowCount is 0, it either means ad not found OR user already viewed it.
+    // We will just fetch the current count to return success in both cases without throwing error.
     if (result.rowCount === 0) {
-      return errorResponse(res, 404, 'Advertisement not found');
+      const checkAd = await pool.query('SELECT views_count FROM advertisements WHERE id = $1', [id]);
+      if (checkAd.rowCount === 0) return errorResponse(res, 404, 'Advertisement not found');
+      return successResponse(res, 200, checkAd.rows[0], 'Already viewed by this user');
     }
     return successResponse(res, 200, result.rows[0], 'View recorded');
   } catch (error) {
@@ -102,12 +114,21 @@ async function recordAdView(req, res, next) {
 async function recordAdClick(req, res, next) {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+
     const result = await pool.query(
-      'UPDATE advertisements SET clicks_count = clicks_count + 1 WHERE id = $1 RETURNING clicks_count',
-      [id]
+      `UPDATE advertisements 
+       SET clicks_count = clicks_count + 1, 
+           clicked_by_users = array_append(clicked_by_users, $2)
+       WHERE id = $1 AND NOT ($2 = ANY(clicked_by_users)) 
+       RETURNING clicks_count`,
+      [id, userId]
     );
+
     if (result.rowCount === 0) {
-      return errorResponse(res, 404, 'Advertisement not found');
+      const checkAd = await pool.query('SELECT clicks_count FROM advertisements WHERE id = $1', [id]);
+      if (checkAd.rowCount === 0) return errorResponse(res, 404, 'Advertisement not found');
+      return successResponse(res, 200, checkAd.rows[0], 'Already clicked by this user');
     }
     return successResponse(res, 200, result.rows[0], 'Click recorded');
   } catch (error) {

@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 
 import 'deep_link_service.dart';
 import 'device_service.dart';
@@ -82,6 +85,24 @@ class PushNotificationService {
     if (notification == null) return;
 
     final newsId = message.data['newsId']?.toString();
+    final imageUrl = message.data['imageUrl']?.toString() ??
+        (Platform.isAndroid ? notification.android?.imageUrl : notification.apple?.imageUrl);
+
+    BigPictureStyleInformation? bigPictureStyle;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(imageUrl)).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          bigPictureStyle = BigPictureStyleInformation(
+            ByteArrayAndroidBitmap(response.bodyBytes),
+            hideExpandedLargeIcon: true,
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to download notification image: $e');
+      }
+    }
 
     await _localNotifications.show(
       notification.hashCode,
@@ -98,6 +119,7 @@ class PushNotificationService {
           largeIcon: const DrawableResourceAndroidBitmap(_largeIcon),
           color: const Color(0xFFF97316),
           colorized: true,
+          styleInformation: bigPictureStyle,
         ),
       ),
       payload: newsId != null && newsId.isNotEmpty

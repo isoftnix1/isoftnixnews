@@ -5,8 +5,8 @@ const { authMiddleware, roleMiddleware } = require('../middleware/authMiddleware
 const router = express.Router();
 
 router.get('/active', getActiveAds);
-router.post('/:id/view', recordAdView);
-router.post('/:id/click', recordAdClick);
+router.post('/:id/view', authMiddleware, recordAdView);
+router.post('/:id/click', authMiddleware, recordAdClick);
 
 // Admin routes for ads
 router.post('/admin/ads', authMiddleware, roleMiddleware(['admin']), upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), createAd);

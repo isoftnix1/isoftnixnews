@@ -57,7 +57,7 @@ async function publishPendingDrafts() {
               const sub = trimmedBody.substring(0, 120);
               trimmedBody = sub.substring(0, Math.min(sub.length, sub.lastIndexOf(' '))) + '…';
             }
-            await sendNotificationToTokens(tokens, title || 'New Article', trimmedBody, { newsId: news.id });
+            await sendNotificationToTokens(tokens, title || 'New Article', trimmedBody, { newsId: news.id }, news.image_url);
           };
 
           await Promise.all([

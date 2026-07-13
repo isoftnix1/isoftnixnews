@@ -131,6 +131,12 @@ app.use('/api/admin', adminApiLimiter, adminRoutes);
 const analyticsRoutes = require('./routes/analyticsRoutes');
 app.use('/api/analytics', analyticsRoutes);
 
+const voiceRoutes = require('./routes/voiceRoutes');
+app.use('/api/voice', voiceRoutes);
+
+const chatRoutes = require('./routes/chatRoutes');
+app.use('/api/chat', chatRoutes);
+
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 

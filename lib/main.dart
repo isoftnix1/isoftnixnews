@@ -12,11 +12,13 @@ import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
+import 'services/auth_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/device_service.dart';
 import 'services/keep_alive_service.dart';
 import 'services/push_notification_service.dart';
-import 'services/device_service.dart';
 import 'services/time_tracking_service.dart';
+import 'services/voice_assistant_service.dart';
 import 'theme/app_theme.dart';
 
 /// Global navigator key used by [DeepLinkService] to navigate
@@ -100,6 +102,7 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> with WidgetsBindingOb
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceAssistantService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

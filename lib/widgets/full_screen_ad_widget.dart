@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/ad_model.dart';
 import '../services/ad_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'video_player_widget.dart';
 
 class FullScreenAdWidget extends StatefulWidget {
@@ -47,12 +48,15 @@ class _FullScreenAdWidgetState extends State<FullScreenAdWidget> {
               autoPlay: true,
             )
           else if (widget.ad.imageUrl != null && widget.ad.imageUrl!.isNotEmpty)
-            Image.network(
-              widget.ad.imageUrl!,
+            CachedNetworkImage(
+              imageUrl: widget.ad.imageUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) => Container(
+              errorWidget: (ctx, url, err) => Container(
                 color: Colors.grey.shade900,
                 child: const Icon(Icons.broken_image, color: Colors.white, size: 50),
+              ),
+              placeholder: (ctx, url) => Container(
+                color: Colors.grey.shade900,
               ),
             )
           else

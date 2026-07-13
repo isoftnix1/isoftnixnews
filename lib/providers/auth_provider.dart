@@ -44,14 +44,12 @@ class AuthProvider extends ChangeNotifier {
       DeviceService().requestLocationPermission();
       return true;
     } on SocketException {
-      // Network is unreachable — the stored token is still valid.
-      // Do NOT delete it; the user will auto-login successfully next launch.
+      // Network is unreachable and no cache exists.
+      // Do NOT delete the token; the user will auto-login successfully next launch.
       ApiService.authToken = null;
       _user = null;
       return false;
     } on TimeoutException {
-      // Server took too long — same treatment as no network.
-      // Token is preserved for the next attempt.
       ApiService.authToken = null;
       _user = null;
       return false;

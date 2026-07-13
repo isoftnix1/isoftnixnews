@@ -12,25 +12,49 @@ function normalizeData(data = {}) {
   );
 }
 
-async function sendNotificationToTokens(tokens, title, body, data = {}) {
+async function sendNotificationToTokens(tokens, title, body, data = {}, imageUrl = null) {
   if (!tokens || tokens.length === 0) return { successCount: 0, failureCount: 0 };
 
   const cleanTokens = [...new Set(tokens.filter(Boolean))];
   if (!cleanTokens.length) return { successCount: 0, failureCount: 0 };
 
+  let optimizedImageUrl = imageUrl;
+  if (optimizedImageUrl && optimizedImageUrl.includes('cloudinary.com') && optimizedImageUrl.includes('/upload/')) {
+    // Compress and format to JPG to ensure it stays under Android's 1MB FCM limit
+    optimizedImageUrl = optimizedImageUrl.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_jpg/');
+  }
+
   const message = {
     notification: {
       title,
       body,
+      ...(optimizedImageUrl && { imageUrl: optimizedImageUrl }),
     },
-    data: normalizeData(data),
+    data: normalizeData({
+      ...data,
+      // Add imageUrl to data payload for Flutter foreground handling
+      ...(optimizedImageUrl && { imageUrl: optimizedImageUrl }), 
+    }),
     android: {
       priority: 'high',
       notification: {
         channelId: ANDROID_CHANNEL_ID,
         icon: ANDROID_NOTIFICATION_ICON,
         color: ANDROID_NOTIFICATION_COLOR,
+        ...(optimizedImageUrl && { imageUrl: optimizedImageUrl }), // Android native image support
       },
+    },
+    apns: {
+      payload: {
+        aps: {
+          'mutable-content': 1, // Required for iOS Notification Service Extension to trigger
+        },
+      },
+      ...(optimizedImageUrl && {
+        fcmOptions: {
+          imageUrl: optimizedImageUrl, // iOS native image support via FCM options
+        },
+      }),
     },
     tokens: cleanTokens,
   };
@@ -95,8 +119,8 @@ async function sendSilentPingToTokens(tokens) {
   }
 }
 
-async function sendNotificationToUsers(userIds, title, body, data = {}) {
-  return sendNotificationToTokens([], title, body, data);
+async function sendNotificationToUsers(userIds, title, body, data = {}, imageUrl = null) {
+  return sendNotificationToTokens([], title, body, data, imageUrl);
 }
 
 module.exports = {
