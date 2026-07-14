@@ -148,8 +148,33 @@ const getMessages = async (req, res) => {
   }
 };
 
+const deleteConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+
+    // Verify ownership
+    const convCheck = await pool.query('SELECT user_id FROM conversations WHERE id = $1', [conversationId]);
+    if (convCheck.rows.length === 0 || convCheck.rows[0].user_id !== userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized or conversation not found' });
+    }
+
+    // Delete messages first to prevent foreign key constraint errors
+    await pool.query('DELETE FROM messages WHERE conversation_id = $1', [conversationId]);
+    
+    // Delete the conversation
+    await pool.query('DELETE FROM conversations WHERE id = $1', [conversationId]);
+
+    res.json({ success: true, message: 'Conversation deleted successfully' });
+  } catch (error) {
+    console.error('[ChatController] Error deleting conversation:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete conversation' });
+  }
+};
+
 module.exports = {
   sendMessage,
   getHistory,
-  getMessages
+  getMessages,
+  deleteConversation
 };

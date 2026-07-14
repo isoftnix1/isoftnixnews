@@ -788,4 +788,8 @@ class ApiService {
     final response = await _request('/chat/$conversationId/messages');
     return response['data'] as List<dynamic>;
   }
+
+  Future<void> deleteChatHistory(String conversationId) async {
+    await _request('/chat/history/$conversationId', method: 'DELETE');
+  }
 }

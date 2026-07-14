@@ -77,6 +77,51 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
     });
   }
 
+  Future<void> _deleteHistory(String conversationId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Chat'),
+        content: const Text('Are you sure you want to delete this conversation? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _apiService.deleteChatHistory(conversationId);
+      setState(() {
+        _history.removeWhere((item) => item['id'] == conversationId);
+        if (_activeConversationId == conversationId) {
+          _activeConversationId = null;
+          _messages.clear();
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chat deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete chat: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _initSpeech() async {
     await _speechToText.initialize();
     setState(() {});
@@ -247,6 +292,10 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
                           return ListTile(
                             leading: const Icon(Icons.chat_bubble_outline),
                             title: Text(conv['title'] ?? 'Chat', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                              onPressed: () => _deleteHistory(conv['id']),
+                            ),
                             onTap: () => _loadConversation(conv['id']),
                             selected: _activeConversationId == conv['id'],
                           );
