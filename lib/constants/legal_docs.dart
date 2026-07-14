@@ -2,7 +2,7 @@ class LegalDocs {
   static const String privacyPolicy = '''
 # Privacy Policy
 
-**Last Updated:** July 11, 2026
+**Effective Date:** July 11, 2026
 
 **iSoftNix News** (referred to as "Company", "we", "our", or "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy ("Policy") outlines our practices regarding the collection, use, processing, and disclosure of information that you provide to us through our Android mobile application ("App") and related services (collectively, the "Services").
 
@@ -18,14 +18,15 @@ We collect information to provide, personalize, and improve our Services. The in
 
 ### 1.1. Information You Provide to Us
 When you register for an account or interact with our Services, we may ask you to provide certain personal information, which includes:
-*   **Account Information:** Your Name, Email Address, Phone Number (optional), and Password.
-*   **User-Generated Content:** If you have administrative or publishing rights, you may upload news content, images, and videos.
+*   **Account Information:** Your Name, Email Address, Phone Number, and Password.
+*   **User-Generated Content:** If you have administrative or publishing rights, you may upload news content, images, and videos. We also collect the text and audio messages you send when interacting with our Conversational AI features.
 
 ### 1.2. Information We Collect Automatically
 When you use the App, our backend servers (Node.js/Express) and third-party integrations automatically collect certain information about your device and interaction with the Services:
 *   **Device Information:** We collect device-specific information such as your hardware model, operating system version, unique device identifiers (hardware fingerprints), and mobile network information. This is strictly used for securing administrative accounts and preventing unauthorized access.
 *   **Usage Data:** We track how you interact with the App, including the articles you read, the time spent on the App, and your language preferences (e.g., English, Hindi, Marathi).
 *   **Push Notification Tokens:** We collect Firebase Cloud Messaging (FCM) tokens to send you breaking news and app updates. Our servers also run heartbeat checks to detect if the App has been uninstalled or is inactive.
+*   **Advertisement Interactions:** We track views and clicks on advertisements displayed within the App to measure ad performance.
 
 ### 1.3. Information Collected via Device Permissions
 To provide enhanced features, we may request your explicit permission to access specific device capabilities. You can enable or disable these permissions at any time through your Android device settings:
@@ -51,7 +52,7 @@ We use the collected information for various operational and legal purposes, inc
 ## 3. How We Share Your Information
 
 We do not sell your personal data. We may share your information only in the following limited circumstances:
-*   **Service Providers:** We engage trusted third-party companies to perform services on our behalf. For example, we use **Cloudinary** for secure cloud storage of media uploads, and **Google Firebase** for analytics and push notifications. These providers have access to your data only to perform these tasks on our behalf.
+*   **Service Providers:** We engage trusted third-party companies to perform services on our behalf. For example, we use **Cloudinary** for secure cloud storage of media uploads, **Google Firebase** for analytics and push notifications, and **Groq** for processing AI chat messages and voice queries. These providers have access to your data only to perform these tasks on our behalf.
 *   **Legal Compliance:** We may disclose your information if required to do so by law, court order, or governmental request, or to protect the rights, property, or safety of iSoftNix, our users, or others.
 
 ---
@@ -68,6 +69,7 @@ We implement robust, industry-standard security measures to protect your data fr
 
 We retain your personal information for as long as your account is active or as needed to provide you with the Services. 
 *   **Automated Cleanup:** We utilize automated background processes to detect inactive devices and purge stale FCM tokens and heartbeat logs after 30 days of inactivity.
+*   **AI Chat History:** We retain your conversational AI chat history to provide continuity in your interactions, but this data will be deleted if you choose to delete your account.
 *   If you choose to delete your account, your personal data will be permanently removed from our active PostgreSQL database.
 
 ---
@@ -94,7 +96,7 @@ If you have any questions, concerns, or grievances regarding this Privacy Policy
   static const String termsAndConditions = '''
 # Terms and Conditions
 
-**Last Updated:** July 11, 2026
+**Effective Date:** July 11, 2026
 
 Welcome to the **iSoftNix News** application ("App"). These Terms and Conditions ("Terms") govern your download, access, and use of the iSoftNix News Android application and its associated backend services (collectively, the "Services"), provided by iSoftNix ("Company", "we", "us", or "our").
 
@@ -126,7 +128,7 @@ By downloading, installing, or using the App, you signify your agreement to thes
 
 ## 3. User-Generated Content and Media Uploads
 
-**3.1. Admin and Publisher Uploads:** Users granted administrative or publishing rights may upload content, including text, images, and videos ("User Content"). 
+**3.1. User Content:** Users may submit information, text, images, videos, and chat messages ("User Content"). This includes news articles uploaded by administrators or publishers, and queries sent to the Conversational AI. 
 
 **3.2. User Responsibility:** You retain all of your ownership rights in your User Content. However, by uploading User Content, you grant us a worldwide, non-exclusive, royalty-free, transferable license to use, reproduce, distribute, and display that content in connection with the Services.
 
@@ -139,37 +141,45 @@ We reserve the right to remove any User Content at our sole discretion without p
 
 ---
 
-## 4. Third-Party Services and Links
+## 4. Conversational AI and Advertisements
 
-The App may contain links to other independent third-party websites or services (e.g., rendering articles via in-app webviews). These third-party sites are not under our control, and we are not responsible for and do not endorse their content or privacy practices. Your use of third-party services, including Cloudinary for media storage and Firebase for analytics, is subject to their respective terms and conditions.
+**4.1. Conversational AI:** The App includes AI-driven chat features specifically designed to provide information and answer queries strictly related to agriculture. The AI is not intended to provide general knowledge or answer questions outside this scope. AI responses are generated programmatically and may contain errors, inaccuracies, or hallucinations. You agree not to rely on AI-generated responses for critical agricultural, medical, financial, or legal decisions. iSoftNix disclaims all liability for any actions taken based on AI interactions.
 
----
-
-## 5. Disclaimers and Limitation of Liability
-
-**5.1. Disclaimer of Warranties:** THE APP AND ITS CONTENT ARE DELIVERED ON AN "AS-IS" AND "AS-AVAILABLE" BASIS. ALL INFORMATION PROVIDED ON THE APP IS SUBJECT TO CHANGE WITHOUT NOTICE. WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING ANY WARRANTIES OF ACCURACY, NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.
-
-**5.2. Limitation of Liability:** EXCEPT WHERE PROHIBITED BY LAW, IN NO EVENT WILL ISOFTNIX BE LIABLE TO YOU FOR ANY INDIRECT, CONSEQUENTIAL, EXEMPLARY, INCIDENTAL, OR PUNITIVE DAMAGES, INCLUDING LOST PROFITS OR DATA LOSS ARISING FROM YOUR USE OF THE APP, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+**4.2. Advertisements:** The App displays advertisements. Your interactions with these ads (such as views and clicks) are tracked internally to measure performance.
 
 ---
 
-## 6. Violation of These Terms
+## 5. Third-Party Services and Links
+
+The App may contain links to other independent third-party websites or services (e.g., rendering articles via in-app webviews). These third-party sites are not under our control, and we are not responsible for and do not endorse their content or privacy practices. Your use of third-party services, including Cloudinary for media storage, Firebase for analytics, and Groq for AI services, is subject to their respective terms and conditions.
+
+---
+
+## 6. Disclaimers and Limitation of Liability
+
+**6.1. Disclaimer of Warranties:** THE APP AND ITS CONTENT ARE DELIVERED ON AN "AS-IS" AND "AS-AVAILABLE" BASIS. ALL INFORMATION PROVIDED ON THE APP IS SUBJECT TO CHANGE WITHOUT NOTICE. WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING ANY WARRANTIES OF ACCURACY, NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.
+
+**6.2. Limitation of Liability:** EXCEPT WHERE PROHIBITED BY LAW, IN NO EVENT WILL ISOFTNIX BE LIABLE TO YOU FOR ANY INDIRECT, CONSEQUENTIAL, EXEMPLARY, INCIDENTAL, OR PUNITIVE DAMAGES, INCLUDING LOST PROFITS OR DATA LOSS ARISING FROM YOUR USE OF THE APP, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+---
+
+## 7. Violation of These Terms
 
 We may disclose any information we have about you if we determine that such disclosure is necessary in connection with any investigation or complaint regarding your use of the App. We reserve the right at all times to terminate your access to the App, without notice, if we determine you have violated these Terms or other associated guidelines.
 
 ---
 
-## 7. Governing Law and Dispute Resolution
+## 8. Governing Law and Dispute Resolution
 
 These Terms and your use of the App will be governed by and construed in accordance with the laws of the jurisdiction in which iSoftNix operates, without regard to its conflict of law provisions. Any dispute arising out of or relating to these Terms or the App shall be subject to the exclusive jurisdiction of the competent courts in that region.
 
 ---
 
-## 8. Changes to the Terms
+## 9. Changes to the Terms
 
 We reserve the right, at our sole discretion, to change, modify, add, or remove portions of these Terms at any time. It is your responsibility to check these Terms periodically for changes. Your continued use of the App following the posting of changes will mean that you accept and agree to the changes.
 
-## 9. Contact Us
+## 10. Contact Us
 
 If you have any questions or feedback regarding these Terms, please contact us at:
 **Email:** isoftnix1@gmail.com

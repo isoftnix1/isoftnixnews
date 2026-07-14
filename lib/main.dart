@@ -4,6 +4,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/category_provider.dart';
@@ -28,7 +29,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env.production');
+  await dotenv.load(fileName: '.env.development');
 
   await Firebase.initializeApp();
 
@@ -75,6 +76,12 @@ class _ISoftNixNewsAppState extends State<ISoftNixNewsApp> with WidgetsBindingOb
       
       // Trigger initial heartbeat
       DeviceService().sendHeartbeat();
+
+      // Request microphone and camera permissions on startup
+      await [
+        Permission.microphone,
+        Permission.camera,
+      ].request();
     });
   }
 

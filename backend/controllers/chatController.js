@@ -85,14 +85,8 @@ const sendMessage = async (req, res) => {
       aiResponse = aiResponse.replace(/[*#\-_]/g, '').trim();
       console.log(`[ChatController] Final news response generated.`);
     } else {
-      // General Intent - For now, fallback to generic response. (Can expand with LLM call)
-      if (lang === 'hi') {
-        aiResponse = "मैं एक कृषि सहायक हूँ। मैं आपको समाचार बता सकता हूँ या निर्यात और उपकरणों के संपर्क दे सकता हूँ।";
-      } else if (lang === 'mr') {
-        aiResponse = "मी एक कृषी सहाय्यक आहे. मी तुम्हाला बातम्या सांगू शकतो किंवा निर्यात आणि उपकरणांचे संपर्क देऊ शकतो.";
-      } else {
-        aiResponse = "I am an agricultural assistant. I can provide news summaries or contact details for export and equipment.";
-      }
+      // General Intent - Let the AI handle it but strictly for agriculture
+      aiResponse = await aiService.answerAgriculturalQuestion(message, lang);
     }
 
     // 5. Save AI message

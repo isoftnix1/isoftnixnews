@@ -28,7 +28,7 @@ Classify their intent into exactly ONE of the following categories:
 - "news": They are asking for the latest news, updates, or information about today/yesterday/etc.
 - "export": They want to contact export consultancy, market export people, or export support team.
 - "equipment": They are asking for contact numbers for agricultural equipment or machinery.
-- "general": They are asking a general farming, crop, or agricultural question.
+- "general": Any other question or statement, including farming, crops, or completely unrelated topics.
 
 Also extract the intended date if they are asking for news (otherwise null).
 Return ONLY a raw JSON object, nothing else. Do not use markdown blocks.
@@ -110,7 +110,46 @@ ${articlesText}`;
   }
 }
 
+/**
+ * Answers a general question using an LLM, restricting it strictly to agriculture.
+ */
+async function answerAgriculturalQuestion(question, lang) {
+  const groq = getGroqClient();
+  
+  const languageNames = {
+    en: 'English',
+    hi: 'Hindi',
+    mr: 'Marathi'
+  };
+  const targetLanguage = languageNames[lang] || 'English';
+
+  const prompt = `You are an expert agricultural assistant.
+A user is asking you something: "${question}"
+
+RULES:
+1. If the message is related to agriculture, farming, crops, weather for farming, livestock, or agricultural equipment, answer it accurately and concisely.
+2. If the message is NOT related to agriculture (e.g., programming, politics, general chit-chat, entertainment), politely decline to answer and state that you are an agricultural assistant and can only answer farming-related queries.
+3. Provide your final response in ${targetLanguage}.`;
+
+  try {
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: 'system', content: prompt }],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.5,
+      max_tokens: 512,
+    });
+
+    return chatCompletion.choices[0]?.message?.content?.trim();
+  } catch (error) {
+    console.error('[AI Service] Failed to answer general question:', error);
+    if (lang === 'hi') return "मुझे इस प्रश्न का उत्तर देने में समस्या आ रही है।";
+    if (lang === 'mr') return "मला या प्रश्नाचे उत्तर देण्यात अडचण येत आहे.";
+    return "I am having trouble answering this question right now.";
+  }
+}
+
 module.exports = {
   analyzeIntent,
   generateVoiceSummary,
+  answerAgriculturalQuestion,
 };

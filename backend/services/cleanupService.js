@@ -10,7 +10,7 @@ async function runDailyCleanup() {
   console.log(`[CLEANUP] Starting daily database cleanup at ${new Date().toISOString()}`);
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    // Transaction removed to allow independent cleanups
 
     // 1. Delete old news_views (3 days)
     // We join with the news table to check the published_at or created_at date
@@ -76,10 +76,8 @@ async function runDailyCleanup() {
       }
     }
 
-    await client.query('COMMIT');
     console.log(`[CLEANUP] Daily database cleanup completed successfully.`);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error(`[CLEANUP ERROR] Failed to run daily cleanup:`, error);
   } finally {
     client.release();

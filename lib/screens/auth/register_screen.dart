@@ -24,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -45,6 +46,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please check the box to agree to the Privacy Policy and Terms and Conditions.')),
+      );
+      return;
+    }
+
 
     final auth = context.read<AuthProvider>();
     final success = await auth.register(
@@ -240,33 +249,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Legal Consent
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                height: 1.5,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
+                              value: _acceptedTerms,
+                              onChanged: (val) {
+                                setState(() {
+                                  _acceptedTerms = val ?? false;
+                                });
+                              },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                          children: [
-                            const TextSpan(text: 'By creating an account, you agree to our '),
-                            TextSpan(
-                              text: 'Terms and Conditions',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => _openPolicy('Terms and Conditions', LegalDocs.termsAndConditions),
                             ),
-                            const TextSpan(text: ' and '),
-                            TextSpan(
-                              text: 'Privacy Policy',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => _openPolicy('Privacy Policy', LegalDocs.privacyPolicy),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: RichText(
+                              textAlign: TextAlign.left,
+                              text: TextSpan(
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      height: 1.5,
+                                    ),
+                                children: [
+                                  const TextSpan(text: 'I have read and agree to the '),
+                                  TextSpan(
+                                    text: 'Terms and Conditions',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicy('Terms and Conditions', LegalDocs.termsAndConditions),
+                                  ),
+                                  const TextSpan(text: ' and '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicy('Privacy Policy', LegalDocs.privacyPolicy),
+                                  ),
+                                  const TextSpan(text: '.'),
+                                ],
+                              ),
                             ),
-                            const TextSpan(text: '.'),
-                          ],
-                        ),
-                      ).animate().fade().slideY(begin: 0.1, duration: 400.ms, delay: 350.ms),
-                    ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fade().slideY(begin: 0.1, duration: 400.ms, delay: 350.ms),
 
                     const SizedBox(height: 24),
 
