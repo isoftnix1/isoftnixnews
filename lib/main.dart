@@ -13,7 +13,7 @@ import 'providers/notification_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
-import 'services/auth_service.dart';
+
 import 'services/deep_link_service.dart';
 import 'services/device_service.dart';
 import 'services/keep_alive_service.dart';

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -108,14 +109,16 @@ class VoiceAssistantService extends ChangeNotifier {
 
       try {
         await _speech.listen(
-          onResult: _handleSpeechResult,
-          localeId: _currentLang == 'en'
-              ? 'en_US'
-              : (_currentLang == 'hi' ? 'hi_IN' : 'mr_IN'),
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 5), // Android handles the timeout automatically
-          partialResults: true,
-          cancelOnError: true,
+          onResult: (SpeechRecognitionResult result) => _handleSpeechResult(result),
+          listenOptions: SpeechListenOptions(
+            localeId: _currentLang == 'en'
+                ? 'en_US'
+                : (_currentLang == 'hi' ? 'hi_IN' : 'mr_IN'),
+            listenFor: const Duration(seconds: 15),
+            pauseFor: const Duration(seconds: 3),
+            partialResults: true,
+            cancelOnError: true,
+          ),
         );
         _isListening = true;
         _lastWords = '';
@@ -140,7 +143,7 @@ class VoiceAssistantService extends ChangeNotifier {
     }
   }
 
-  void _handleSpeechResult(result) {
+  void _handleSpeechResult(SpeechRecognitionResult result) {
     final words = result.recognizedWords.toLowerCase().trim();
     if (words.isEmpty) return;
 

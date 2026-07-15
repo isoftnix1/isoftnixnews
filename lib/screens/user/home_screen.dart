@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import '../chat/personal_chat_screen.dart';
@@ -364,9 +364,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           begin: Alignment.bottomCenter,
                                           end: Alignment.topCenter,
                                           colors: [
-                                            Colors.black.withOpacity(1.0),
-                                            Colors.black.withOpacity(0.85),
-                                            Colors.black.withOpacity(0.5),
+                                            Colors.black.withValues(alpha: 1.0),
+                                            Colors.black.withValues(alpha: 0.85),
+                                            Colors.black.withValues(alpha: 0.5),
                                             Colors.transparent,
                                           ],
                                           stops: const [0.0, 0.45, 0.65, 1.0],

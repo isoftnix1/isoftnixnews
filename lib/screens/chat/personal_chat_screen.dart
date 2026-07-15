@@ -8,9 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/voice_visualizer.dart';
 import '../../services/api_service.dart';
 import '../../services/voice_assistant_service.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
-import '../../theme/app_theme.dart';
 
 class PersonalChatScreen extends StatefulWidget {
   const PersonalChatScreen({super.key});
@@ -140,6 +138,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
         return; 
       }
 
+      if (!mounted) return;
       final lang = context.read<LanguageProvider>().currentLanguage;
       final voiceAssistant = context.read<VoiceAssistantService>();
       final voiceHistory = await voiceAssistant.getVoiceMemory();
@@ -231,6 +230,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
 
     await _flutterTts.stop(); // Stop any ongoing TTS when sending a new message
 
+    if (!mounted) return;
     final lang = context.read<LanguageProvider>().currentLanguage;
     final userMessage = text.trim();
     
@@ -281,12 +281,14 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
       
       await _flutterTts.speak(aiMessage['content']);
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send message: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: $e')),
+        );
+      }
     }
   }
 
@@ -311,6 +313,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
       debugPrint('[Appa] Ignored Mic Tap - Already waiting for API response');
       return; // Don't listen if already waiting for a response
     }
+    if (!mounted) return;
     final lang = context.read<LanguageProvider>().currentLanguage;
     String localeId = lang == 'hi' ? 'hi_IN' : lang == 'mr' ? 'mr_IN' : 'en_US';
 
@@ -325,9 +328,11 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
           _textController.text = result.recognizedWords;
         }
       },
-      localeId: localeId,
-      listenFor: const Duration(seconds: 10),
-      cancelOnError: true,
+      listenOptions: SpeechListenOptions(
+        localeId: localeId,
+        listenFor: const Duration(seconds: 10),
+        cancelOnError: true,
+      ),
     );
   }
 
@@ -486,7 +491,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   offset: const Offset(0, -1),
                   blurRadius: 4,
                 ),

@@ -42,7 +42,7 @@ class VoiceVisualizer extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
             ),
           ),
           Container(
@@ -50,7 +50,7 @@ class VoiceVisualizer extends StatelessWidget {
             height: 65,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.4),
+              color: color.withValues(alpha: 0.4),
             ),
           ),
           Container(
@@ -59,11 +59,11 @@ class VoiceVisualizer extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [color, color.withOpacity(0.8)],
+                colors: [color, color.withValues(alpha: 0.8)],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.5),
+                  color: color.withValues(alpha: 0.5),
                   blurRadius: 10,
                   spreadRadius: 2,
                 )

@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shimmer/shimmer.dart';
 
+import 'package:share_plus/share_plus.dart';
 import '../models/news_model.dart';
 import 'video_preview_widget.dart';
 
@@ -94,9 +94,9 @@ class NewsCard extends StatelessWidget {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(1.0), // Solid black at very bottom
-                  Colors.black.withOpacity(0.85), // Dark over text
-                  Colors.black.withOpacity(0.5), // Blend zone
+                  Colors.black.withValues(alpha: 1.0), // Solid black at very bottom
+                  Colors.black.withValues(alpha: 0.85), // Dark over text
+                  Colors.black.withValues(alpha: 0.5), // Blend zone
                   Colors.transparent,            // Transparent at very top
                 ],
                 stops: const [0.0, 0.45, 0.65, 1.0],
@@ -130,7 +130,7 @@ class NewsCard extends StatelessWidget {
                   news.content,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     height: 1.5,
                   ),
                   maxLines: 8,
@@ -170,14 +170,14 @@ class NewsCard extends StatelessWidget {
                         Icon(
                           Icons.access_time_rounded,
                           size: 14,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           timeAgoText,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -201,11 +201,21 @@ class NewsCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
+                      IconButton(
+                        onPressed: () {
+                          final deepLink = 'https://krrishi.co.in/news/${news.id}';
+                          Share.share('${news.title}\n\nRead more on the Krrishi app: $deepLink');
+                        },
+                        icon: const Icon(Icons.share_outlined, size: 20),
+                        color: Colors.white.withValues(alpha: 0.8),
+                        padding: const EdgeInsets.only(right: 12),
+                        constraints: const BoxConstraints(),
+                      ),
                       Text(
                         'Tap to read more',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -213,17 +223,29 @@ class NewsCard extends StatelessWidget {
                   ),
                 ] else ...[
                   const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Tap to read full article',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
-                        fontWeight: FontWeight.w500,
-                        fontStyle: FontStyle.italic,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          final deepLink = 'https://krrishi.co.in/news/${news.id}';
+                          Share.share('${news.title}\n\nRead more on the Krrishi app: $deepLink');
+                        },
+                        icon: const Icon(Icons.share_outlined, size: 20),
+                        color: Colors.white.withValues(alpha: 0.8),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                    ),
+                      Text(
+                        'Tap to read full article',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w500,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
                 ]
               ],
