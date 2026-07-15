@@ -203,7 +203,7 @@ class NewsCard extends StatelessWidget {
                       const Spacer(),
                       IconButton(
                         onPressed: () {
-                          final deepLink = 'https://krrishi.co.in/news/${news.id}';
+                          final deepLink = 'https://api.krrishi.co.in/news/${news.id}';
                           Share.share('${news.title}\n\nRead more on the Krrishi app: $deepLink');
                         },
                         icon: const Icon(Icons.share_outlined, size: 20),
@@ -228,7 +228,7 @@ class NewsCard extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () {
-                          final deepLink = 'https://krrishi.co.in/news/${news.id}';
+                          final deepLink = 'https://api.krrishi.co.in/news/${news.id}';
                           Share.share('${news.title}\n\nRead more on the Krrishi app: $deepLink');
                         },
                         icon: const Icon(Icons.share_outlined, size: 20),

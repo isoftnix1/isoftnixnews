@@ -138,6 +138,41 @@ app.use('/api/voice', voiceRoutes);
 const chatRoutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatRoutes);
 
+// Route for WhatsApp/Social Media Link Previews (Deep Linking)
+app.get('/news/:id', async (req, res) => {
+  try {
+    const { pool } = require('./config/db');
+    const result = await pool.query('SELECT title, image_url FROM news WHERE id = $1', [req.params.id]);
+    
+    if (result.rows.length === 0) return res.status(404).send('News not found');
+    
+    const news = result.rows[0];
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Krrishi News</title>
+        <meta property="og:title" content="${news.title.replace(/"/g, '&quot;')}" />
+        <meta property="og:description" content="Read the full article on the Krrishi app" />
+        <meta property="og:image" content="${news.image_url}" />
+        <meta property="og:type" content="article" />
+      </head>
+      <body>
+        <h2>${news.title}</h2>
+        <p>To read this article, open the Krrishi App.</p>
+        <script>
+          // Attempt to open the app directly using custom URI scheme fallback
+          window.location.href = "updates://news/${req.params.id}";
+        </script>
+      </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (error) {
+    res.status(500).send('Server Error');
+  }
+});
+
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
