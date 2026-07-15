@@ -38,6 +38,14 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="updates"/>
             </intent-filter>
+            <!-- App Links for custom domain -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="krrishi.co.in" />
+                <data android:scheme="https" android:host="www.krrishi.co.in" />
+            </intent-filter>
         </activity>
 
         <!-- Firebase Cloud Messaging defaults for system-displayed notifications -->
