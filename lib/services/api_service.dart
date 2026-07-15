@@ -792,4 +792,18 @@ class ApiService {
   Future<void> deleteChatHistory(String conversationId) async {
     await _request('/chat/history/$conversationId', method: 'DELETE');
   }
+
+  Future<Map<String, dynamic>> syncVoiceMemory({
+    required List<Map<String, String>> voiceHistory,
+    required String lang,
+    required String conversationId,
+  }) async {
+    final body = {
+      'voiceHistory': voiceHistory,
+      'lang': lang,
+      'conversationId': conversationId,
+    };
+    final response = await _request('/chat/summarize-day', method: 'POST', body: body);
+    return response['data'];
+  }
 }

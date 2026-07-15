@@ -93,6 +93,8 @@ async function initializeDatabase() {
       
       ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS views_count INT NOT NULL DEFAULT 0;
       ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS clicks_count INT NOT NULL DEFAULT 0;
+      ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS start_date TIMESTAMP;
+      ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS end_date TIMESTAMP;
     `);
   } finally {
     client.release();

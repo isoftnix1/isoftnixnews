@@ -13,9 +13,9 @@ const getVoiceSummary = async (req, res) => {
     console.log(`\n================= NEW AI VOICE REQUEST =================`);
     console.log(`[AI Voice] 1. User asked: "${command}" (Language: ${lang})`);
 
-    // 1. Extract intent & Date
-    const { intent, date: targetDate } = await aiService.analyzeIntent(command);
-    console.log(`[AI Voice] 2. Groq Extracted Intent: ${intent}, Date: ${targetDate}`);
+    // 1. Extract intent, category & Date
+    const { intent, category, date: targetDate } = await aiService.analyzeIntent(command);
+    console.log(`[AI Voice] 2. Groq Extracted Intent: ${intent}, Category: ${category}, Date: ${targetDate}`);
 
     let aiResponse = '';
 
@@ -33,7 +33,7 @@ const getVoiceSummary = async (req, res) => {
       }
     } else if (intent === 'equipment') {
       const productionEquipmentContacts = [
-        { name: 'Agriculture Equipment Support', phone: '+917972420103' }
+        { name: 'Omkar Sawant', phone: '+917972420103' }
       ];
       const contactsText = productionEquipmentContacts.map(c => `${c.name}: ${c.phone}`).join(', ');
       if (lang === 'hi') {
@@ -44,10 +44,18 @@ const getVoiceSummary = async (req, res) => {
         aiResponse = `Here are the contact numbers for agricultural equipment providers: ${contactsText}`;
       }
     } else if (intent === 'news') {
-      // 2. Define the target categories
-      const targetCategories = ['Agriculture', 'Technology', 'Business', 'Global'];
+      // 2. Define the target categories based on user request
+      let targetCategories = ['Agriculture', 'Technology', 'Business', 'Global'];
+      if (category && category.toLowerCase() !== 'all') {
+        // Find matching category (case-insensitive)
+        const match = targetCategories.find(c => c.toLowerCase() === category.toLowerCase());
+        if (match) {
+          targetCategories = [match];
+        }
+      }
+      
       const articles = [];
-      console.log(`[AI Voice] 3. Fetching top 4 articles for this date...`);
+      console.log(`[AI Voice] 3. Fetching top articles for categories: ${targetCategories.join(', ')}...`);
 
       // 3. Fetch 1 top article for each category on the target date
       for (const catName of targetCategories) {
@@ -74,18 +82,28 @@ const getVoiceSummary = async (req, res) => {
       }
 
       console.log(`[AI Voice] 4. Found ${articles.length} articles. Requesting summary from Groq...`);
-      aiResponse = await aiService.generateVoiceSummary(articles, lang);
+      aiResponse = await aiService.generateVoiceSummary(articles, lang, category);
       aiResponse = aiResponse.replace(/[*#\-_]/g, '').trim(); // Remove formatting marks
       console.log(`[AI Voice] 5. Groq Summary ready. Sending to client.`);
     } else {
       // General Intent
-      if (lang === 'hi') {
-        aiResponse = "मैं एक कृषि सहायक हूँ। मैं आपको समाचार बता सकता हूँ या निर्यात और उपकरणों के संपर्क दे सकता हूँ।";
-      } else if (lang === 'mr') {
-        aiResponse = "मी एक कृषी सहाय्यक आहे. मी तुम्हाला बातम्या सांगू शकतो किंवा निर्यात आणि उपकरणांचे संपर्क देऊ शकतो.";
-      } else {
-        aiResponse = "I am an agricultural assistant. I can provide news summaries or contact details for export and equipment.";
-      }
+      console.log(`[AI Voice] 3. General Intent detected. Fetching recent DB news for AI Context...`);
+      
+      // Fetch 5 recent articles for AI context so it can answer questions based on platform news
+      const recentNewsQuery = `
+        SELECT title_${lang} AS title, content_${lang} AS content
+        FROM news 
+        WHERE is_published = true 
+        ORDER BY created_at DESC 
+        LIMIT 5
+      `;
+      const recentNewsResult = await pool.query(recentNewsQuery);
+      const contextArticles = recentNewsResult.rows;
+
+      console.log(`[AI Voice] 4. Sending to Appa AI Service with ${contextArticles.length} recent context articles...`);
+      aiResponse = await aiService.answerGeneralQuestion(command, lang, [], contextArticles);
+      aiResponse = aiResponse.replace(/[*#\-_]/g, '').trim(); // Remove formatting marks
+      console.log(`[AI Voice] 5. Appa AI Response ready.`);
     }
 
     res.json({

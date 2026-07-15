@@ -24,6 +24,27 @@ class AdService {
     }
   }
 
+  Future<List<AdModel>> getAllAds() async {
+    final token = ApiService.authToken;
+    if (token == null) return [];
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/ads/admin/ads');
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final data = decoded['data'] as List<dynamic>? ?? [];
+        return data.map((e) => AdModel.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<void> addAd({
     required String companyName,
     required String title,
@@ -31,6 +52,8 @@ class AdService {
     required String targetUrl,
     File? imageFile,
     File? videoFile,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
     final token = ApiService.authToken;
     if (token == null) throw Exception('Not authenticated');
@@ -42,6 +65,13 @@ class AdService {
       ..fields['title'] = title
       ..fields['description'] = description
       ..fields['target_url'] = targetUrl;
+
+    if (startDate != null) {
+      request.fields['start_date'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      request.fields['end_date'] = endDate.toIso8601String();
+    }
 
     if (imageFile != null) {
       request.files.add(await http.MultipartFile.fromPath('image', imageFile.path));

@@ -138,7 +138,7 @@ async function cleanupStaleTokens() {
     const markInactiveQuery = `
       UPDATE user_devices
       SET app_status = 'inactive', updated_at = NOW()
-      WHERE app_status = 'active' AND last_seen_at < NOW() - INTERVAL '7 days';
+      WHERE app_status = 'active' AND last_seen_at < NOW() - INTERVAL '2 days';
     `;
     const inactiveResult = await client.query(markInactiveQuery);
 

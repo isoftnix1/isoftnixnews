@@ -22,6 +22,7 @@ const { notFoundMiddleware, errorMiddleware } = require('./middleware/errorMiddl
 const { initScheduler } = require('./services/reminderScheduler');
 const { initCleanupScheduler } = require('./services/cleanupService');
 const { initDraftScheduler } = require('./services/draftScheduler');
+const { initCronJobs } = require('./cronJobs');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -149,6 +150,7 @@ async function startServer() {
       initScheduler();
       initCleanupScheduler();
       initDraftScheduler();
+      initCronJobs();
     }
     
     app.listen(PORT, () => {

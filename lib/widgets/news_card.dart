@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -39,178 +41,197 @@ class NewsCard extends StatelessWidget {
     final date = news.publishedAt ?? news.createdAt ?? DateTime.now();
     final timeAgoText = _timeAgo(date);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(51),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.black, // Fallback background
+        ),
+        child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── 1. Blurred Background (Eliminates empty space) ────────
+          if (news.imageUrl.isNotEmpty)
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: CachedNetworkImage(
+                imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: Colors.black),
+                errorWidget: (context, url, error) => Container(color: Colors.black),
+              ),
+            ),
+            
+          // ── 2. Foreground Image (Uncropped, perfect aspect ratio) ────────
+          if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
+            Align(
+              alignment: Alignment.topCenter,
+              child: FractionallySizedBox(
+                heightFactor: 0.5,
+                child: VideoPreviewWidget(url: news.videoUrl!),
+              ),
+            )
+          else if (news.imageUrl.isNotEmpty)
+            Align(
+              alignment: Alignment.topCenter,
+              child: FractionallySizedBox(
+                heightFactor: 0.55,
+                child: CachedNetworkImage(
+                  imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
+                  fit: BoxFit.contain, // Prevents cropping, maintains framing
+                ),
+              ),
+            )
+          else
+            const Center(
+              child: Icon(Icons.article, size: 60, color: Colors.white24),
+            ),
+
+          // ── 3. Cinematic Gradient Overlay ────────
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(1.0), // Solid black at very bottom
+                  Colors.black.withOpacity(0.85), // Dark over text
+                  Colors.black.withOpacity(0.5), // Blend zone
+                  Colors.transparent,            // Transparent at very top
+                ],
+                stops: const [0.0, 0.45, 0.65, 1.0],
+              ),
+            ),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
-                VideoPreviewWidget(url: news.videoUrl!)
-              else if (news.imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: CachedNetworkImage(
-                    imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      highlightColor: Theme.of(context).colorScheme.surface,
-                      child: Container(
-                        height: 200,
-                        width: double.infinity,
-                        color: Colors.white,
+          
+          // ── 4. Content at Bottom ────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Text(
+                  news.title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                
+                // Content Preview
+                Text(
+                  news.content,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.5,
+                  ),
+                  maxLines: 8,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // ── Footer: Categories & Meta ────────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: news.categories.isNotEmpty
+                            ? news.categories.map((c) {
+                                final name = c['name']?.toString() ?? 'General';
+                                return _buildCategoryChip(context, name);
+                              }).toList()
+                            : [
+                                _buildCategoryChip(
+                                  context,
+                                  news.categoryName == null || news.categoryName!.isEmpty
+                                      ? 'General'
+                                      : news.categoryName!,
+                                ),
+                              ],
                       ),
                     ),
-                    errorWidget: (context, url, error) {
-                      return Container(
-                        height: 200,
-                        color: Theme.of(context).cardTheme.color?.withValues(alpha: 0.5) ??
-                            Colors.grey.withValues(alpha: 0.1),
-                        child: Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: Colors.grey.withValues(alpha: 0.5),
-                            size: 40,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Category chips + relative time row ──────────────
+                    const SizedBox(width: 8),
+                    // Relative time
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: news.categories.isNotEmpty
-                                ? news.categories.map((c) {
-                                    final name = c['name']?.toString() ?? 'General';
-                                    return _buildCategoryChip(context, name);
-                                  }).toList()
-                                : [
-                                    _buildCategoryChip(
-                                      context,
-                                      news.categoryName == null || news.categoryName!.isEmpty
-                                          ? 'General'
-                                          : news.categoryName!,
-                                    ),
-                                  ],
-                          ),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
+                          color: Colors.white.withOpacity(0.6),
                         ),
-                        const SizedBox(width: 8),
-                        // ── Relative time with clock icon ────────────────
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 13,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.color
-                                  ?.withAlpha(160),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              timeAgoText,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontSize: 12,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color
-                                        ?.withAlpha(160),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                          ],
+                        const SizedBox(width: 4),
+                        Text(
+                          timeAgoText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.6),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // ── External source row ──────────────────────────────
-                    if (news.imageUrl.isEmpty &&
-                        news.sourceName != null &&
-                        news.sourceName!.isNotEmpty) ...[
-                      Row(
-                        children: [
-                          const Icon(Icons.language, size: 16, color: Colors.blue),
-                          const SizedBox(width: 6),
-                          Text(
-                            news.sourceName!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
+                  ],
+                ),
+                
+                if (news.imageUrl.isEmpty && news.sourceName != null && news.sourceName!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.language, size: 14, color: Colors.blueAccent),
+                      const SizedBox(width: 6),
                       Text(
-                        'Tap to read the complete article.',
+                        news.sourceName!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Tap to read more',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          color: Colors.white.withOpacity(0.5),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                      const SizedBox(height: 12),
                     ],
-
-                    // ── Title ────────────────────────────────────────────
-                    Text(
-                      news.title,
-                      style: Theme.of(context).textTheme.titleLarge,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Tap to read full article',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.7),
+                        fontWeight: FontWeight.w500,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-
-                    // ── Preview content ──────────────────────────────────
-                    Text(
-                      news.content,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ]
+              ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
+    ));
   }
 
   String _optimizeCloudinaryUrl(String url) {

@@ -4,7 +4,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../../widgets/voice_visualizer.dart';
 import '../../services/api_service.dart';
+import '../../services/voice_assistant_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../theme/app_theme.dart';
@@ -28,6 +30,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
   bool _isLoading = false;
   bool _isHistoryLoading = false;
   bool _isListening = false;
+  bool _isSpeaking = false;
   String? _activeConversationId;
 
   @override
@@ -35,7 +38,9 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
     super.initState();
     _initSpeech();
     _initTts();
-    _loadHistory();
+    _loadHistory().then((_) {
+      _syncMemory();
+    });
   }
 
   Future<void> _loadHistory() async {
@@ -122,6 +127,52 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
     }
   }
 
+  Future<void> _syncMemory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      final lastSyncStr = prefs.getString('last_sync_date');
+
+      // Only summarize if a new day has started!
+      if (lastSyncStr == todayStr) {
+        debugPrint('[Appa] Already synced today. Will summarize at the end of the day/tomorrow.');
+        return; 
+      }
+
+      final lang = context.read<LanguageProvider>().currentLanguage;
+      final voiceAssistant = context.read<VoiceAssistantService>();
+      final voiceHistory = await voiceAssistant.getVoiceMemory();
+      
+      // If there's no voice history, we should still trigger the backend to summarize yesterday's text chats!
+
+      await _apiService.syncVoiceMemory(
+        voiceHistory: voiceHistory,
+        lang: lang,
+        conversationId: _activeConversationId ?? '',
+      );
+      
+      await voiceAssistant.clearVoiceMemory();
+      await prefs.setString('last_sync_date', todayStr);
+      debugPrint('[Appa] Automatic background sync completed for previous day.');
+      
+      // Reload history silently
+      final history = await _apiService.getChatHistory();
+      if (mounted) {
+        setState(() {
+          _history = history;
+        });
+        if (_activeConversationId != null) {
+          final messages = await _apiService.getChatMessages(_activeConversationId!);
+          setState(() {
+            _messages = messages;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[Appa] Automatic sync failed: $e');
+    }
+  }
+
   Future<void> _initSpeech() async {
     await _speechToText.initialize();
     setState(() {});
@@ -129,6 +180,36 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
 
   Future<void> _initTts() async {
     await _flutterTts.setSpeechRate(0.5);
+    
+    try {
+      await _flutterTts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playAndRecord,
+        [
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        ],
+      );
+    } catch (e) {
+      debugPrint('[Appa] Could not set iOS Audio Category: $e');
+    }
+
+    _flutterTts.setStartHandler(() {
+      debugPrint('[Appa] TTS Started - Showing BLUE speaking animation');
+      if (mounted) setState(() => _isSpeaking = true);
+    });
+    _flutterTts.setCompletionHandler(() {
+      debugPrint('[Appa] TTS Finished - Hiding animation');
+      if (mounted) setState(() => _isSpeaking = false);
+    });
+    _flutterTts.setCancelHandler(() {
+      debugPrint('[Appa] TTS Cancelled - Hiding animation');
+      if (mounted) setState(() => _isSpeaking = false);
+    });
+    _flutterTts.setErrorHandler((msg) {
+      debugPrint('[Appa] TTS Error - Hiding animation');
+      if (mounted) setState(() => _isSpeaking = false);
+    });
   }
 
   void _scrollToBottom() {
@@ -145,6 +226,9 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+    if (_isLoading) return; // Prevent duplicate API requests
+
+    await _flutterTts.stop(); // Stop any ongoing TTS when sending a new message
 
     final lang = context.read<LanguageProvider>().currentLanguage;
     final userMessage = text.trim();
@@ -195,7 +279,6 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
       }
       
       await _flutterTts.speak(aiMessage['content']);
-
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -207,10 +290,30 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
   }
 
   void _startListening() async {
-    if (!_speechToText.isAvailable) return;
+    debugPrint('[Appa] Mic Tapped - Starting listener');
+    bool wasSpeaking = _isSpeaking;
+    if (_isSpeaking) {
+       await _flutterTts.stop();
+       setState(() => _isSpeaking = false);
+    }
+    await _speechToText.cancel();
+    
+    if (wasSpeaking) {
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    if (!_speechToText.isAvailable) {
+      debugPrint('[Appa] Speech to Text not available on this device');
+      return;
+    }
+    if (_isLoading) {
+      debugPrint('[Appa] Ignored Mic Tap - Already waiting for API response');
+      return; // Don't listen if already waiting for a response
+    }
     final lang = context.read<LanguageProvider>().currentLanguage;
     String localeId = lang == 'hi' ? 'hi_IN' : lang == 'mr' ? 'mr_IN' : 'en_US';
 
+    debugPrint('[Appa] Mic Started - Showing RED listening animation');
     setState(() => _isListening = true);
     await _speechToText.listen(
       onResult: (result) {
@@ -228,6 +331,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
   }
 
   void _stopListening() async {
+    debugPrint('[Appa] Mic Stopped manually or timed out');
     await _speechToText.stop();
     setState(() => _isListening = false);
   }
@@ -263,7 +367,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Personal Agri-Bot'),
+        title: const Text('Appa'),
         elevation: 1,
       ),
       endDrawer: Drawer(
@@ -309,21 +413,50 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Text(
-                      'Ask me anything about farming or news!',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 16),
+            child: Stack(
+              children: [
+                _messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Ask me anything about farming or news!',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 100),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessage(_messages[index]);
+                        },
+                      ),
+                
+                if (_isListening || _isSpeaking)
+                  Positioned(
+                    bottom: 20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_isSpeaking) {
+                            _flutterTts.stop();
+                            setState(() => _isSpeaking = false);
+                          } else if (_isListening) {
+                            _stopListening();
+                          } else {
+                            _startListening();
+                          }
+                        },
+                        child: VoiceVisualizer(
+                          isListening: _isListening,
+                          isSpeaking: _isSpeaking,
+                        ),
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      return _buildMessage(_messages[index]);
-                    },
                   ),
+              ],
+            ),
           ),
           if (_isLoading)
             Padding(
@@ -366,7 +499,16 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
                       _isListening ? Icons.mic : Icons.mic_none,
                       color: _isListening ? Colors.red : Theme.of(context).colorScheme.primary,
                     ),
-                    onPressed: _isListening ? _stopListening : _startListening,
+                    onPressed: () {
+                      if (_isSpeaking) {
+                        _flutterTts.stop();
+                        setState(() => _isSpeaking = false);
+                      } else if (_isListening) {
+                        _stopListening();
+                      } else {
+                        _startListening();
+                      }
+                    },
                   ),
                   Expanded(
                     child: TextField(

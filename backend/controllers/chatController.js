@@ -6,7 +6,7 @@ const productionExportContacts = [
 ];
 
 const productionEquipmentContacts = [
-  { name: 'Agriculture Equipment Support', phone: '+917972420103' }
+  { name: 'Omkar Sawant', phone: '+917972420103' }
 ];
 
 const sendMessage = async (req, res) => {
@@ -34,19 +34,26 @@ const sendMessage = async (req, res) => {
       console.log(`[ChatController] Created new conversationId: ${activeConversationId}`);
     }
 
-    // 2. Save user message
+    // 2. Fetch previous conversation history (last 10 messages)
+    const historyResult = await pool.query(
+      'SELECT sender, content FROM (SELECT sender, content, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 10) sub ORDER BY created_at ASC',
+      [activeConversationId]
+    );
+    const history = historyResult.rows;
+
+    // 3. Save user message
     await pool.query(
       'INSERT INTO messages (conversation_id, sender, content) VALUES ($1, $2, $3)',
       [activeConversationId, 'user', message]
     );
 
-    // 3. Analyze Intent
+    // 4. Analyze Intent
     console.log(`[ChatController] Analyzing intent...`);
-    const { intent, date } = await aiService.analyzeIntent(message);
+    const { intent, date } = await aiService.analyzeIntent(message, history);
     console.log(`[ChatController] AI intent: ${intent}, date: ${date}`);
     let aiResponse = '';
 
-    // 4. Handle based on intent
+    // 5. Handle based on intent
     if (intent === 'export') {
       const contactsText = productionExportContacts.map(c => `${c.name}: ${c.phone}`).join('\n');
       if (lang === 'hi') {
@@ -81,15 +88,19 @@ const sendMessage = async (req, res) => {
         const result = await pool.query(query, [`%${catName}%`, date]);
         if (result.rows.length > 0) articles.push(result.rows[0]);
       }
-      aiResponse = await aiService.generateVoiceSummary(articles, lang);
-      aiResponse = aiResponse.replace(/[*#\-_]/g, '').trim();
+      aiResponse = await aiService.generateVoiceSummary(articles, lang, history);
       console.log(`[ChatController] Final news response generated.`);
     } else {
-      // General Intent - Let the AI handle it but strictly for agriculture
-      aiResponse = await aiService.answerAgriculturalQuestion(message, lang);
+      // General Intent - Appa handles it with safety filters and context
+      aiResponse = await aiService.answerGeneralQuestion(message, lang, history);
     }
 
-    // 5. Save AI message
+    // Strip markdown formatting so Text-to-Speech reads it fluently
+    if (aiResponse) {
+      aiResponse = aiResponse.replace(/[*#\-_]/g, '').trim();
+    }
+
+    // 6. Save AI message
     console.log(`[ChatController] Saving AI response to database: "${aiResponse.substring(0, 50)}..."`);
     const aiMessageResult = await pool.query(
       'INSERT INTO messages (conversation_id, sender, content, intent) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -172,9 +183,70 @@ const deleteConversation = async (req, res) => {
   }
 };
 
+const summarizeDay = async (req, res) => {
+  try {
+    const { voiceHistory = [], lang = 'en', conversationId } = req.body;
+    const userId = req.user.id;
+
+    let activeConversationId = conversationId;
+
+    // If no conversationId, create one for the summary
+    if (!activeConversationId) {
+      const convResult = await pool.query(
+        'INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING id',
+        [userId, 'Daily Summary']
+      );
+      activeConversationId = convResult.rows[0].id;
+    } else {
+      // Verify ownership if conversationId provided
+      const convCheck = await pool.query('SELECT user_id FROM conversations WHERE id = $1', [activeConversationId]);
+      if (convCheck.rows.length === 0 || convCheck.rows[0].user_id !== userId) {
+        return res.status(403).json({ success: false, message: 'Unauthorized' });
+      }
+    }
+
+    // Fetch all personal chat messages for this conversation today
+    const historyResult = await pool.query(
+      'SELECT sender, content, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC',
+      [activeConversationId]
+    );
+    const chatHistory = historyResult.rows;
+
+    if (chatHistory.length === 0 && voiceHistory.length === 0) {
+      return res.json({ success: true, message: 'Nothing to summarize' });
+    }
+
+    console.log(`[ChatController] Generating grand summary for ${chatHistory.length} chat messages and ${voiceHistory.length} voice interactions.`);
+    
+    // Generate Grand Summary
+    const grandSummary = await aiService.generateGrandSummary(voiceHistory, chatHistory, lang);
+
+    // Delete all old messages
+    await pool.query('DELETE FROM messages WHERE conversation_id = $1', [activeConversationId]);
+
+    // Insert the single Grand Summary message
+    const summaryResult = await pool.query(
+      'INSERT INTO messages (conversation_id, sender, content, intent) VALUES ($1, $2, $3, $4) RETURNING *',
+      [activeConversationId, 'ai', grandSummary, 'daily_summary']
+    );
+
+    res.json({
+      success: true,
+      data: {
+        message: summaryResult.rows[0]
+      }
+    });
+
+  } catch (error) {
+    console.error('[ChatController] Error summarizing day:', error);
+    res.status(500).json({ success: false, message: 'Failed to summarize day' });
+  }
+};
+
 module.exports = {
   sendMessage,
   getHistory,
   getMessages,
-  deleteConversation
+  deleteConversation,
+  summarizeDay
 };

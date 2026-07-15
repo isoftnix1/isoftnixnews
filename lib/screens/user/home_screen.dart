@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -23,6 +24,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/news_card.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/corn_loader/corn_loader.dart';
+import '../../widgets/voice_visualizer.dart';
 
 import 'external_article_screen.dart';
 
@@ -34,12 +36,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final lang = context.read<LanguageProvider>().currentLanguage;
       context.read<NewsProvider>().loadCategories(lang: lang);
@@ -49,15 +50,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
+  void _onPageChanged(int index) {
     if (!mounted) return;
     final newsProvider = context.read<NewsProvider>();
+    // Load more when we are 3 items away from the end
     if (newsProvider.hasMore && !newsProvider.isLoading) {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (index >= newsProvider.feedItems.length - 3) {
         newsProvider.loadMoreNews();
       }
     }
@@ -94,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : null,
                     onTap: () {
                       provider.changeLanguage(context, 'en');
+                      context.read<VoiceAssistantService>().updateLanguage('en');
                       Navigator.pop(context);
                     },
                   ),
@@ -104,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : null,
                     onTap: () {
                       provider.changeLanguage(context, 'hi');
+                      context.read<VoiceAssistantService>().updateLanguage('hi');
                       Navigator.pop(context);
                     },
                   ),
@@ -114,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : null,
                     onTap: () {
                       provider.changeLanguage(context, 'mr');
+                      context.read<VoiceAssistantService>().updateLanguage('mr');
                       Navigator.pop(context);
                     },
                   ),
@@ -189,18 +194,18 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: Consumer<VoiceAssistantService>(
         builder: (context, voiceService, _) {
           if (voiceService.isListening || voiceService.isProcessing || voiceService.isSpeaking) {
-            return FloatingActionButton(
-              onPressed: () async {
+            return GestureDetector(
+              onTap: () async {
                 if (voiceService.isSpeaking) {
                   await voiceService.stopSpeaking();
                 } else if (voiceService.isListening) {
                   voiceService.stopListening();
                 }
               },
-              backgroundColor: voiceService.isListening ? Colors.red : Colors.orange,
-              child: Icon(
-                voiceService.isListening ? Icons.mic : (voiceService.isProcessing ? Icons.hourglass_empty : Icons.stop),
-                color: Colors.white,
+              child: VoiceVisualizer(
+                isListening: voiceService.isListening,
+                isProcessing: voiceService.isProcessing,
+                isSpeaking: voiceService.isSpeaking,
               ),
             );
           }
@@ -218,9 +223,9 @@ class _HomeScreenState extends State<HomeScreen> {
             isOpenOnStart: false,
             children: [
               SpeedDialChild(
-                child: const Icon(Icons.mic_none, color: Colors.white),
+                child: const Icon(Icons.mic, color: Colors.white),
                 backgroundColor: Colors.green,
-                label: 'Voice Assistant',
+                label: 'Tap to Speak',
                 onTap: () async {
                   final currentLang = context.read<LanguageProvider>().currentLanguage;
                   await voiceService.startListening(currentLang);
@@ -229,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SpeedDialChild(
                 child: const Icon(Icons.person, color: Colors.white),
                 backgroundColor: Colors.blue,
-                label: 'Personal Agri-Bot',
+                label: 'Appa',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -281,7 +286,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: ListView.builder(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      scrollDirection: Axis.vertical,
+                      onPageChanged: _onPageChanged,
                       itemCount: newsProvider.feedItems.length + 1,
                       itemBuilder: (context, index) {
                         if (index == newsProvider.feedItems.length) {
@@ -300,18 +308,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         final item = newsProvider.feedItems[index];
 
                         if (item is AdModel) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: VisibilityDetector(
-                              key: Key('ad_${item.id}'),
-                              onVisibilityChanged: (info) {
-                                // Only record a view if at least 50% of the ad is visible
-                                if (info.visibleFraction >= 0.5) {
-                                  AdService().recordAdView(item.id);
-                                }
-                              },
-                              child: GestureDetector(
-                                onTap: () async {
+                          return VisibilityDetector(
+                            key: Key('ad_${item.id}'),
+                            onVisibilityChanged: (info) {
+                              // Only record a view if at least 50% of the ad is visible
+                              if (info.visibleFraction >= 0.5) {
+                                AdService().recordAdView(item.id);
+                              }
+                            },
+                            child: GestureDetector(
+                              onTap: () async {
                                 final uri = Uri.parse(item.targetUrl);
                                 if (await canLaunchUrl(uri)) {
                                   // Record the click
@@ -320,120 +326,148 @@ class _HomeScreenState extends State<HomeScreen> {
                                 }
                               },
                               child: Container(
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.grey.shade900,
-                                  image: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                                      ? DecorationImage(
-                                          image: CachedNetworkImageProvider(item.imageUrl!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
+                                decoration: const BoxDecoration(
+                                  color: Colors.black, // Fallback background
                                 ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: const LinearGradient(
-                                      colors: [Colors.transparent, Colors.black87],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      stops: [0.5, 1.0],
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(16),
-                                  alignment: Alignment.bottomLeft,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.companyName,
-                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              item.title,
-                                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // ── 1. Blurred Background ────────
+                                    if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                      ImageFiltered(
+                                        imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                                        child: CachedNetworkImage(
+                                          imageUrl: item.imageUrl!,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Container(color: Colors.black),
+                                          errorWidget: (context, url, error) => Container(color: Colors.black),
                                         ),
                                       ),
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
+
+                                    // ── 2. Foreground Image ────────
+                                    if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                      Align(
+                                        alignment: Alignment.topCenter,
+                                        child: FractionallySizedBox(
+                                          heightFactor: 0.55,
+                                          child: CachedNetworkImage(
+                                            imageUrl: item.imageUrl!,
+                                            fit: BoxFit.contain, // Prevents cropping
+                                          ),
+                                        ),
+                                      ),
+
+                                    // ── 3. Cinematic Gradient Overlay ────────
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black.withOpacity(1.0),
+                                            Colors.black.withOpacity(0.85),
+                                            Colors.black.withOpacity(0.5),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0.0, 0.45, 0.65, 1.0],
+                                        ),
+                                      ),
+                                    ),
+
+                                    // ── 4. Ad Content ────────
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white24,
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: const Text('Sponsored', style: TextStyle(color: Colors.white, fontSize: 10)),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.primary,
-                                              borderRadius: BorderRadius.circular(16),
-                                            ),
-                                            child: const Row(
+                                          Expanded(
+                                            child: Column(
                                               mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text('Learn More', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                                                SizedBox(width: 4),
-                                                Icon(Icons.open_in_new, color: Colors.white, size: 14),
+                                                Text(
+                                                  item.companyName,
+                                                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 14),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  item.title,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                                ),
+                                                const SizedBox(height: 16),
                                               ],
                                             ),
                                           ),
+                                          Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white24,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: const Text('Sponsored', style: TextStyle(color: Colors.white, fontSize: 11)),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  borderRadius: BorderRadius.circular(24),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text('Learn More', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                                    SizedBox(width: 6),
+                                                    Icon(Icons.open_in_new, color: Colors.white, size: 16),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                            ],
+                                          ),
                                         ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ),
-                        );
+                          );
                       }
 
                         if (item is NewsModel) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: NewsCard(
-                              news: item,
-                              onTap: () {
-                                final sourceUrl = item.sourceUrl;
-                                if (sourceUrl != null && sourceUrl.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ExternalArticleScreen(
-                                        title: item.title,
-                                        url: sourceUrl,
-                                        newsId: item.id,
-                                      ),
+                          return NewsCard(
+                            news: item,
+                            onTap: () {
+                              final sourceUrl = item.sourceUrl;
+                              if (sourceUrl != null && sourceUrl.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ExternalArticleScreen(
+                                      title: item.title,
+                                      url: sourceUrl,
+                                      newsId: item.id,
                                     ),
-                                  );
-                                } else {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.newsDetails,
-                                    arguments: item.id,
-                                  );
-                                }
-                              },
-                            ),
-                          ).animate().fade(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms);
+                                  ),
+                                );
+                              } else {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.newsDetails,
+                                  arguments: item.id,
+                                );
+                              }
+                            },
+                          );
                         }
                         return const SizedBox.shrink();
                       },
-                      controller: _scrollController,
                     ),
                   ),
                 ],

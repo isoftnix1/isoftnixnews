@@ -8,6 +8,8 @@ class AdModel {
   final String targetUrl;
   final int viewsCount;
   final int clicksCount;
+  final DateTime? startDate;
+  final DateTime? endDate;
 
   const AdModel({
     required this.id,
@@ -19,6 +21,8 @@ class AdModel {
     required this.targetUrl,
     this.viewsCount = 0,
     this.clicksCount = 0,
+    this.startDate,
+    this.endDate,
   });
 
   factory AdModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +40,8 @@ class AdModel {
       clicksCount: json['clicks_count'] is int 
           ? json['clicks_count'] 
           : int.tryParse(json['clicks_count']?.toString() ?? '0') ?? 0,
+      startDate: json['start_date'] != null ? DateTime.parse(json['start_date']) : null,
+      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
     );
   }
 
@@ -50,6 +56,8 @@ class AdModel {
       'target_url': targetUrl,
       'views_count': viewsCount,
       'clicks_count': clicksCount,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
     };
   }
 }

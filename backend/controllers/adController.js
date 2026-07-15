@@ -4,8 +4,9 @@ const { uploadToCloudinary } = require('../services/cloudinaryService');
 
 async function getActiveAds(req, res, next) {
   try {
+    console.log('[AdController] Fetching active ads for user (Filtering by start_date and end_date)');
     const result = await pool.query(
-      'SELECT id, company_name, title, description, image_url, video_url, target_url, views_count, clicks_count FROM advertisements WHERE is_active = TRUE ORDER BY created_at DESC'
+      'SELECT id, company_name, title, description, image_url, video_url, target_url, views_count, clicks_count FROM advertisements WHERE is_active = TRUE AND (start_date IS NULL OR NOW() >= start_date) AND (end_date IS NULL OR NOW() <= end_date) ORDER BY created_at DESC'
     );
     return successResponse(res, 200, result.rows, 'Active ads retrieved successfully');
   } catch (error) {
@@ -13,9 +14,19 @@ async function getActiveAds(req, res, next) {
   }
 }
 
+async function getAllAds(req, res, next) {
+  try {
+    console.log('[AdController] Admin fetching ALL ads (ignoring dates for analytics)');
+    const result = await pool.query('SELECT * FROM advertisements ORDER BY created_at DESC');
+    return successResponse(res, 200, result.rows, 'All ads retrieved successfully');
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function createAd(req, res, next) {
   try {
-    const { company_name, title, description, target_url, is_active } = req.body;
+    const { company_name, title, description, target_url, is_active, start_date, end_date } = req.body;
 
     if (!company_name || !title || !target_url) {
       return errorResponse(res, 400, 'Company name, title, and target URL are required');
@@ -37,10 +48,12 @@ async function createAd(req, res, next) {
       videoUrl = uploadedVideo?.secure_url || null;
     }
 
+    console.log(`[AdController] Creating Ad: "${title}" - Scheduled from: ${start_date || 'Now'} to ${end_date || 'Forever'}`);
+
     const result = await pool.query(
-      `INSERT INTO advertisements (company_name, title, description, image_url, video_url, target_url, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [company_name, title, description || null, imageUrl, videoUrl, target_url, is_active !== undefined ? is_active : true]
+      `INSERT INTO advertisements (company_name, title, description, image_url, video_url, target_url, is_active, start_date, end_date) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [company_name, title, description || null, imageUrl, videoUrl, target_url, is_active !== undefined ? is_active : true, start_date || null, end_date || null]
     );
 
     return successResponse(res, 201, result.rows[0], 'Advertisement created successfully');
@@ -138,6 +151,7 @@ async function recordAdClick(req, res, next) {
 
 module.exports = {
   getActiveAds,
+  getAllAds,
   createAd,
   deleteAd,
   recordAdView,

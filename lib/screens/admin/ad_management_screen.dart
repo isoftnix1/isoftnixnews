@@ -31,7 +31,7 @@ class _AdManagementScreenState extends State<AdManagementScreen> {
       _errorMessage = null;
     });
     try {
-      final ads = await _adService.getActiveAds();
+      final ads = await _adService.getAllAds();
       setState(() {
         _ads = ads;
       });
@@ -56,6 +56,10 @@ class _AdManagementScreenState extends State<AdManagementScreen> {
       // Refresh list after closing
       _fetchAds();
     });
+  }
+
+  String _formatDateTime(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   @override
@@ -138,6 +142,20 @@ class _AdManagementScreenState extends State<AdManagementScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
+                                      if (ad.startDate != null && ad.endDate != null) ...[
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '${_formatDateTime(ad.startDate!)}  To  ${_formatDateTime(ad.endDate!)}',
+                                            style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -198,6 +216,7 @@ class _AddAdBottomSheetState extends State<_AddAdBottomSheet> {
   
   File? _selectedImage;
   File? _selectedVideo;
+  DateTimeRange? _selectedDateRange;
   bool _isSubmitting = false;
 
   final ImagePicker _picker = ImagePicker();
@@ -223,6 +242,27 @@ class _AddAdBottomSheetState extends State<_AddAdBottomSheet> {
     }
   }
 
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)), // Allowed past dates for testing
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      // Set start to beginning of day, end to end of day
+      final startWithTime = DateTime(picked.start.year, picked.start.month, picked.start.day, 0, 0);
+      final endWithTime = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59);
+      
+      setState(() {
+        _selectedDateRange = DateTimeRange(start: startWithTime, end: endWithTime);
+      });
+    }
+  }
+
+  String _formatDateTime(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedImage == null && _selectedVideo == null) {
@@ -240,6 +280,8 @@ class _AddAdBottomSheetState extends State<_AddAdBottomSheet> {
         targetUrl: _urlController.text,
         imageFile: _selectedImage,
         videoFile: _selectedVideo,
+        startDate: _selectedDateRange?.start,
+        endDate: _selectedDateRange?.end,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -305,6 +347,33 @@ class _AddAdBottomSheetState extends State<_AddAdBottomSheet> {
                   controller: _urlController,
                   decoration: const InputDecoration(labelText: 'Target URL', border: OutlineInputBorder()),
                   validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                InkWell(
+                  onTap: _pickDateRange,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_month, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        Text(
+                          _selectedDateRange == null 
+                            ? 'Select Schedule (Optional)' 
+                            : '${_formatDateTime(_selectedDateRange!.start)}  To  ${_formatDateTime(_selectedDateRange!.end)}',
+                          style: TextStyle(
+                            color: _selectedDateRange == null ? Colors.grey[600] : Colors.black87,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
