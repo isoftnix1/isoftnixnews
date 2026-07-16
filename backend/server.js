@@ -138,6 +138,35 @@ app.use('/api/voice', voiceRoutes);
 const chatRoutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatRoutes);
 
+// --- APP LINKS VERIFICATION (ANDROID & IOS) ---
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.json([{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.isoftnix.updates",
+      "sha256_cert_fingerprints": [
+        process.env.ANDROID_SHA256 || "INSERT_YOUR_SHA256_HERE"
+      ]
+    }
+  }]);
+});
+
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    "applinks": {
+      "apps": [],
+      "details": [
+        {
+          "appID": `${process.env.IOS_TEAM_ID || "INSERT_TEAM_ID"}.com.isoftnix.updates`,
+          "paths": [ "/news/*" ]
+        }
+      ]
+    }
+  });
+});
+
 // Route for WhatsApp/Social Media Link Previews (Deep Linking)
 app.get('/news/:id', async (req, res) => {
   try {

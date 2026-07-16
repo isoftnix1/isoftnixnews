@@ -30,12 +30,15 @@ When you use the App, our backend servers (Node.js/Express) and third-party inte
 
 ### 1.3. Information Collected via Device Permissions
 To provide enhanced features, we may request your explicit permission to access specific device capabilities. You can enable or disable these permissions at any time through your Android device settings:
-*   **Location Information (GPS Tracking):** With your permission, we collect your precise or approximate location (Foreground and Background). This allows us to serve you hyper-local news, relevant weather updates, and region-specific content.
+*   **Location Information (GPS Tracking):** With your permission, we collect your precise or approximate location while the app is in use (Foreground). This allows us to serve you hyper-local news, relevant weather updates, and region-specific content.
 *   **Camera and Photo Library:** With your permission, we access your device’s camera and photo gallery to allow you to upload images and videos directly to news articles or your profile.
-*   **Microphone Access:** If you choose to record video footage for news uploads, we will require microphone access to capture the accompanying audio.
+*   **Microphone Access:** If you choose to record video footage for news uploads or use the Voice Assistant ("Appa"), we will require microphone access to capture your audio. Your voice queries are processed to generate AI responses.
 
-### 1.4. Future Services
-Please note that in the future, we plan to introduce additional features including a Payment Wallet, Trade Rates, and Export Rates functionality. When these features are implemented, this Privacy Policy will be updated to reflect the additional financial and transactional data we may collect to facilitate those services.
+### 1.5. Artificial Intelligence & Voice Assistant ("Appa")
+Our application includes an AI-powered voice assistant designed to interact in a friendly, conversational, and human-like manner. Your chat history and voice queries are processed and stored on our secure servers to maintain conversational context. We implement strict limitations and safety filters to ensure the AI behaves safely.
+
+### 1.4. Children's Privacy
+Our Services are not directed to individuals under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information. If you become aware that a child has provided us with personal information, please contact us.
 
 ---
 
@@ -143,7 +146,7 @@ We reserve the right to remove any User Content at our sole discretion without p
 
 ## 4. Conversational AI and Advertisements
 
-**4.1. Conversational AI:** The App includes AI-driven chat features specifically designed to provide information and answer queries strictly related to agriculture. The AI is not intended to provide general knowledge or answer questions outside this scope. AI responses are generated programmatically and may contain errors, inaccuracies, or hallucinations. You agree not to rely on AI-generated responses for critical agricultural, medical, financial, or legal decisions. iSoftNix disclaims all liability for any actions taken based on AI interactions.
+**4.1. Conversational AI ("Appa"):** The App includes an AI-driven chat feature designed to be friendly and behave in a human-like manner to assist you with queries. While we have programmed strict limitations to ensure the AI remains safe and is not dangerous, Artificial Intelligence is inherently unpredictable and may contain errors, inaccuracies, or hallucinations. iSoftNix shall not be held responsible or liable if something happens as a result of relying on AI-generated responses for critical agricultural, medical, financial, or legal decisions. You use the AI Assistant entirely at your own risk.
 
 **4.2. Advertisements:** The App displays advertisements. Your interactions with these ads (such as views and clicks) are tracked internally to measure performance.
 
