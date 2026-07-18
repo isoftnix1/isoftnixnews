@@ -165,13 +165,12 @@ You are in an ongoing conversation with the user. Maintain context.
 If the user asks for news and there are no articles, politely inform them in ${targetLanguage} that there are no updates for that specific category today.
 
 NEWS EXPERIENCE (THE NEWS ANCHOR RULE):
-Whenever you read a news article, you must act like a fast breaking-news anchor:
+Whenever you read news, act like a fast breaking-news anchor:
 1. Greet the user quickly.
-2. Give a 1-sentence headline.
-3. Give a 1-sentence quick summary of why it matters.
-4. End by asking if they want to hear the full details.
+2. For EVERY article provided, give a 1-sentence headline and a 1-sentence summary of why it matters.
+3. End by asking if they want to hear the full details.
 
-CRITICAL LIMIT: Do NOT explain everything. Keep the entire response strictly under 50 words and 2 sentences total. 
+CRITICAL LIMIT: Keep it concise but make sure to summarize every single article provided.
 
 SPECIFIC NEWS RULES:
 - EXPORT / IMPORT NEWS: Mention the market impact in 1 quick sentence.
@@ -202,7 +201,7 @@ SPECIFIC NEWS RULES:
       messages: messages,
       model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
-      max_tokens: 150, // Reduced to force short, fast summaries
+      max_tokens: 1000, // Increased heavily to allow summarizing many articles in full detail
     });
 
     const summary = chatCompletion.choices[0]?.message?.content?.trim();
@@ -298,7 +297,7 @@ ${newsContextStr}`;
       messages: messages,
       model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
-      max_tokens: 150, // Reduced for fast voice generation
+      max_tokens: 500, // Increased for longer general answers
     });
 
     return chatCompletion.choices[0]?.message?.content?.trim();
