@@ -108,7 +108,7 @@ Format: {"intent": "news|export|equipment|general", "category": "Agriculture|Tec
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0,
     });
 
@@ -200,7 +200,7 @@ SPECIFIC NEWS RULES:
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: messages,
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
       max_tokens: 150, // Reduced to force short, fast summaries
     });
@@ -296,7 +296,7 @@ ${newsContextStr}`;
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: messages,
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
       max_tokens: 150, // Reduced for fast voice generation
     });
@@ -351,7 +351,7 @@ Keep it strictly under 3 sentences. No conversational filler, just the summary.`
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: messages,
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.3,
       max_tokens: 256,
     });
