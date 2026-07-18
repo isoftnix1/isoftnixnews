@@ -46,8 +46,8 @@ class NewsCard extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth > 600;
 
-    // Adjust image height based on device type
-    final double imageHeightFactor = isTablet ? 0.70 : 0.55;
+    // Adjust image height based on device type to prevent overlap with text on tall screens
+    final double imageHeightFactor = isTablet ? 0.60 : 0.45;
 
     // Adjust gradient stops so it doesn't consume the whole tablet screen
     final List<double> gradientStops = isTablet
