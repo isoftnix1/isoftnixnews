@@ -41,6 +41,19 @@ class NewsCard extends StatelessWidget {
     final date = news.publishedAt ?? news.createdAt ?? DateTime.now();
     final timeAgoText = _timeAgo(date);
 
+    // Responsive checks
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isTablet = screenWidth > 600;
+
+    // Adjust image height based on device type
+    final double imageHeightFactor = isTablet ? 0.70 : 0.55;
+
+    // Adjust gradient stops so it doesn't consume the whole tablet screen
+    final List<double> gradientStops = isTablet
+        ? const [0.0, 0.3, 0.55, 1.0]  // Tighter gradient on tablet
+        : const [0.0, 0.45, 0.65, 1.0]; // Taller gradient on phone
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -75,7 +88,7 @@ class NewsCard extends StatelessWidget {
             Align(
               alignment: Alignment.topCenter,
               child: FractionallySizedBox(
-                heightFactor: 0.55,
+                heightFactor: imageHeightFactor,
                 child: CachedNetworkImage(
                   imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
                   fit: BoxFit.contain, // Prevents cropping, maintains framing
@@ -99,43 +112,47 @@ class NewsCard extends StatelessWidget {
                   Colors.black.withValues(alpha: 0.5), // Blend zone
                   Colors.transparent,            // Transparent at very top
                 ],
-                stops: const [0.0, 0.45, 0.65, 1.0],
+                stops: gradientStops,
               ),
             ),
           ),
           
           // ── 4. Content at Bottom ────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                Text(
-                  news.title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.3,
+            padding: EdgeInsets.fromLTRB(20, 0, 20, isTablet ? 40 : 24),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isTablet ? 700 : double.infinity),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  // Title
+                  Text(
+                    news.title,
+                    style: TextStyle(
+                      fontSize: isTablet ? 32 : 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                
-                // Content Preview
-                Text(
-                  news.content,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    height: 1.5,
+                  const SizedBox(height: 12),
+                  
+                  // Content Preview
+                  Text(
+                    news.content,
+                    style: TextStyle(
+                      fontSize: isTablet ? 18 : 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      height: 1.5,
+                    ),
+                    maxLines: 8,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 8,
-                  overflow: TextOverflow.ellipsis,
-                ),
                 
                 const SizedBox(height: 24),
                 
@@ -249,8 +266,10 @@ class NewsCard extends StatelessWidget {
                   ),
                 ]
               ],
-            ),
-          ),
+            ), // Column
+          ), // ConstrainedBox
+        ), // Align
+      ), // Padding
         ],
       ),
     ));

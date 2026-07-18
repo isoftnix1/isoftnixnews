@@ -235,12 +235,17 @@ class VoiceAssistantService extends ChangeNotifier {
     try {
       final summary = await _apiService.getVoiceSummary(command, lang: lang);
       
-      _isProcessing = false;
-      notifyListeners();
-
       if (summary.isNotEmpty) {
+        // Switch states directly to prevent the UI from flickering back to the green button
+        _isSpeaking = true; 
+        _isProcessing = false;
+        notifyListeners();
+
         await _voiceManager.speak(summary, lang);
         await _saveToMemory(command, summary);
+      } else {
+        _isProcessing = false;
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error processing voice command: $e');

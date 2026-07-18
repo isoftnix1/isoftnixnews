@@ -68,6 +68,7 @@ dependencies:
   speech_to_text: ^7.4.0
   flutter_tts: ^4.2.5
   flutter_speed_dial: ^7.0.0
+  siri_wave: ^2.1.2
 
 
 dev_dependencies:
