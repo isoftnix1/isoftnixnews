@@ -115,7 +115,7 @@ class VoiceAssistantService extends ChangeNotifier {
                 ? 'en_US'
                 : (_currentLang == 'hi' ? 'hi_IN' : 'mr_IN'),
             listenFor: const Duration(seconds: 15),
-            pauseFor: const Duration(seconds: 3),
+            pauseFor: const Duration(milliseconds: 1500), // Reduced from 3s to 1.5s for faster response
             partialResults: true,
             cancelOnError: true,
           ),
@@ -182,7 +182,7 @@ class VoiceAssistantService extends ChangeNotifier {
       } else {
         // Debounce timer for when Android takes too long to send 'finalResult'
         _speechTimeout?.cancel();
-        _speechTimeout = Timer(const Duration(milliseconds: 2000), () {
+        _speechTimeout = Timer(const Duration(milliseconds: 1000), () { // Reduced from 2000ms to 1000ms
           if (_lastWords.isNotEmpty) {
             _executeCommand(_lastWords);
           }

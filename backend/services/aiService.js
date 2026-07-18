@@ -3,6 +3,10 @@ const Groq = require('groq-sdk');
 // We initialize inside the functions or with a getter so the app doesn't crash on startup if the key is missing yet.
 let groqClient = null;
 
+// IN-MEMORY CACHE FOR OPTIMIZATION
+const voiceCache = new Map();
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 function getGroqClient() {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not configured in .env');
@@ -45,6 +49,8 @@ ANTI-HALLUCINATION & ACCURACY RULES:
 2. If the user asks for real-time live data (like today's live weather temperature, live stock prices, or live sports scores) which you do not have access to, politely explain that you don't have live access to that specific data right now.
 3. Always answer confidently but honestly. Be concise and to the point.
 4. You are a general-purpose assistant. You MUST answer EVERY type of question the user asks (e.g., science, history, cooking, coding, math, general knowledge, entertainment), even if it is completely unrelated to news or agriculture. Be helpful and answer anything they ask.
+SPEED & CONCISENESS RULE (CRITICAL):
+You MUST keep all your answers strictly under 2 sentences and under 50 words. This is mandatory for low-latency voice generation. Be punchy, clear, and extremely fast.
 
 FORMATTING:
 Respond in plain, conversational text. DO NOT use any markdown formatting (no asterisks, bold, or bullet points) because this text will be read aloud by a Text-to-Speech engine.`;
@@ -130,6 +136,19 @@ Format: {"intent": "news|export|equipment|general", "category": "Agriculture|Tec
  * Summarizes the articles into a conversational news bulletin.
  */
 async function generateVoiceSummary(articles, lang, requestedCategory = 'all', history = []) {
+  // Generate a cache key based on the request
+  const articleIds = articles ? articles.map(a => a.id || a.title.substring(0, 10)).join('|') : 'empty';
+  const historyHash = history ? history.length : 0;
+  const cacheKey = `news_${lang}_${requestedCategory}_${articleIds}_${historyHash}`;
+
+  if (voiceCache.has(cacheKey)) {
+    const cachedEntry = voiceCache.get(cacheKey);
+    if (Date.now() - cachedEntry.timestamp < CACHE_TTL_MS) {
+      console.log(`[AI Service] ⚡ Serving NEWS summary from MEMORY CACHE!`);
+      return cachedEntry.data;
+    }
+  }
+
   const groq = getGroqClient();
   
   const languageNames = {
@@ -145,19 +164,18 @@ CONTEXT MEMORY:
 You are in an ongoing conversation with the user. Maintain context. 
 If the user asks for news and there are no articles, politely inform them in ${targetLanguage} that there are no updates for that specific category today.
 
-NEWS EXPERIENCE:
-Whenever you read a news article:
-1. Greet the user.
-2. Introduce the news.
-3. Explain it naturally as a friend.
-4. Tell why it matters.
-5. Explain how it impacts farmers, businesses, exporters or consumers whenever applicable.
-6. Give a short positive takeaway.
-7. End with ONE follow-up question (e.g., "Would you like to hear another news update?", "Should I continue with the next story?", "Would you like a quick summary?").
+NEWS EXPERIENCE (THE NEWS ANCHOR RULE):
+Whenever you read a news article, you must act like a fast breaking-news anchor:
+1. Greet the user quickly.
+2. Give a 1-sentence headline.
+3. Give a 1-sentence quick summary of why it matters.
+4. End by asking if they want to hear the full details.
+
+CRITICAL LIMIT: Do NOT explain everything. Keep the entire response strictly under 50 words and 2 sentences total. 
 
 SPECIFIC NEWS RULES:
-- EXPORT / IMPORT NEWS: Always explain Farmer impact, Export impact, Business impact, and Global market impact.
-- MARKET NEWS: Always explain Price increase/decrease, Market trend, and Farmer impact.`;
+- EXPORT / IMPORT NEWS: Mention the market impact in 1 quick sentence.
+- MARKET NEWS: Mention the price trend in 1 quick sentence.`;
 
   const messages = [{ role: 'system', content: systemPrompt }];
   
@@ -184,10 +202,18 @@ SPECIFIC NEWS RULES:
       messages: messages,
       model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       temperature: 0.7,
-      max_tokens: 1024,
+      max_tokens: 150, // Reduced to force short, fast summaries
     });
 
-    return chatCompletion.choices[0]?.message?.content?.trim();
+    const summary = chatCompletion.choices[0]?.message?.content?.trim();
+    
+    // Save to cache
+    voiceCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: summary
+    });
+
+    return summary;
   } catch (error) {
     console.error('[AI Service] Failed to generate summary:', error);
     throw new Error('Failed to generate AI summary');
@@ -272,7 +298,7 @@ ${newsContextStr}`;
       messages: messages,
       model: 'llama-3.1-8b-instant',
       temperature: 0.7,
-      max_tokens: 512,
+      max_tokens: 150, // Reduced for fast voice generation
     });
 
     return chatCompletion.choices[0]?.message?.content?.trim();
