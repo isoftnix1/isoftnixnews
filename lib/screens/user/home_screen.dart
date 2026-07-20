@@ -329,55 +329,62 @@ class _HomeScreenState extends State<HomeScreen> {
                                 decoration: const BoxDecoration(
                                   color: Colors.black, // Fallback background
                                 ),
-                                child: Stack(
-                                  fit: StackFit.expand,
+                                child: Column(
                                   children: [
-                                    // ── 1. Blurred Background ────────
-                                    if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                                      ImageFiltered(
-                                        imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                                        child: CachedNetworkImage(
-                                          imageUrl: item.imageUrl!,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) => Container(color: Colors.black),
-                                          errorWidget: (context, url, error) => Container(color: Colors.black),
-                                        ),
-                                      ),
+                                    // ── 1. Top Half: Image ────────
+                                    Expanded(
+                                      flex: 45,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                            ImageFiltered(
+                                              imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                                              child: CachedNetworkImage(
+                                                imageUrl: item.imageUrl!,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) => Container(color: Colors.black),
+                                                errorWidget: (context, url, error) => Container(color: Colors.black),
+                                              ),
+                                            ),
 
-                                    // ── 2. Foreground Image ────────
-                                    if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                                      Align(
-                                        alignment: Alignment.topCenter,
-                                        child: FractionallySizedBox(
-                                          heightFactor: 0.55,
-                                          child: CachedNetworkImage(
-                                            imageUrl: item.imageUrl!,
-                                            fit: BoxFit.contain, // Prevents cropping
+                                          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                            CachedNetworkImage(
+                                              imageUrl: item.imageUrl!,
+                                              fit: BoxFit.contain,
+                                            ),
+
+                                          // Small gradient to blend with the text section
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomCenter,
+                                                end: Alignment.topCenter,
+                                                colors: [
+                                                  Colors.black.withValues(alpha: 1.0),
+                                                  Colors.transparent,
+                                                ],
+                                                stops: const [0.0, 0.2],
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-
-                                    // ── 3. Cinematic Gradient Overlay ────────
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.bottomCenter,
-                                          end: Alignment.topCenter,
-                                          colors: [
-                                            Colors.black.withValues(alpha: 1.0),
-                                            Colors.black.withValues(alpha: 0.85),
-                                            Colors.black.withValues(alpha: 0.5),
-                                            Colors.transparent,
-                                          ],
-                                          stops: const [0.0, 0.45, 0.65, 1.0],
-                                        ),
+                                        ],
                                       ),
                                     ),
 
-                                    // ── 4. Ad Content ────────
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                                      child: Row(
+                                    // ── 2. Bottom Half: Ad Content ────────
+                                    Expanded(
+                                      flex: 55,
+                                      child: Container(
+                                        color: Colors.black,
+                                        width: double.infinity,
+                                        child: SafeArea(
+                                          bottom: true,
+                                          top: false,
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                                            child: SingleChildScrollView(
+                                              child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
@@ -431,12 +438,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ],
                                           ),
                                         ],
-                                      ),
-                                    ),
+                                              ), // Row
+                                            ), // SingleChildScrollView
+                                          ), // Padding
+                                        ), // SafeArea
+                                      ), // Container
+                                    ), // Expanded
                                   ],
-                                ),
-                              ),
-                            ),
+                                ), // Column
+                              ), // Container
+                            ), // GestureDetector
                           );
                       }
 

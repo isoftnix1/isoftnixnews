@@ -49,8 +49,8 @@ const sendMessage = async (req, res) => {
 
     // 4. Analyze Intent
     console.log(`[ChatController] Analyzing intent...`);
-    const { intent, date } = await aiService.analyzeIntent(message, history);
-    console.log(`[ChatController] AI intent: ${intent}, date: ${date}`);
+    const { intent, category, date } = await aiService.analyzeIntent(message, history);
+    console.log(`[ChatController] AI intent: ${intent}, category: ${category}, date: ${date}`);
     let aiResponse = '';
 
     // 5. Handle based on intent
@@ -74,7 +74,14 @@ const sendMessage = async (req, res) => {
       }
     } else if (intent === 'news') {
       // Fetch news
-      const targetCategories = ['Agriculture', 'Technology', 'Business', 'Global'];
+      let targetCategories = ['Agriculture', 'Technology', 'Business', 'Global'];
+      if (category && category.toLowerCase() !== 'all') {
+        const match = targetCategories.find(c => c.toLowerCase() === category.toLowerCase());
+        if (match) {
+          targetCategories = [match];
+        }
+      }
+
       const articles = [];
       for (const catName of targetCategories) {
         const query = `
@@ -82,13 +89,13 @@ const sendMessage = async (req, res) => {
           FROM news n
           JOIN news_categories nc ON n.id = nc.news_id
           JOIN categories c ON nc.category_id = c.id
-          WHERE c.name_en ILIKE $1 AND n.is_published = true AND n.created_at >= $2::date AND n.created_at < ($2::date + INTERVAL '1 day')
+          WHERE c.name_en ILIKE $1 AND n.is_published = true
           ORDER BY n.created_at DESC LIMIT 1
         `;
-        const result = await pool.query(query, [`%${catName}%`, date]);
+        const result = await pool.query(query, [`%${catName}%`]);
         if (result.rows.length > 0) articles.push(result.rows[0]);
       }
-      aiResponse = await aiService.generateVoiceSummary(articles, lang, history);
+      aiResponse = await aiService.generateVoiceSummary(articles, lang, category, history);
       console.log(`[ChatController] Final news response generated.`);
     } else {
       // General Intent - Appa handles it with safety filters and context

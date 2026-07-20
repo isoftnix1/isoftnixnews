@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import '../services/language_service.dart';
 import '../services/api_service.dart';
 import 'news_provider.dart';
@@ -30,6 +31,10 @@ class LanguageProvider extends ChangeNotifier {
 
     _currentLanguage = languageCode;
     await _languageService.setLanguage(languageCode);
+    FirebaseAnalytics.instance.logSelectContent(
+      contentType: 'language',
+      itemId: languageCode,
+    );
     notifyListeners();
 
     // Asynchronously update backend preference without blocking UI

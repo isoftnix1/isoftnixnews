@@ -93,6 +93,7 @@ class AuthProvider extends ChangeNotifier {
       await _refreshUserProfile();
       if (_user != null) {
         FirebaseAnalytics.instance.setUserId(id: _user!.id);
+        FirebaseAnalytics.instance.logLogin(loginMethod: 'email');
       }
       // Register FCM token to backend
       _registerFcmToken();
@@ -140,6 +141,7 @@ class AuthProvider extends ChangeNotifier {
       await _refreshUserProfile();
       if (_user != null) {
         FirebaseAnalytics.instance.setUserId(id: _user!.id);
+        FirebaseAnalytics.instance.logSignUp(signUpMethod: 'email');
       }
       // Register FCM token to backend
       _registerFcmToken();

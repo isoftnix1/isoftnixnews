@@ -60,84 +60,81 @@ class NewsCard extends StatelessWidget {
         decoration: const BoxDecoration(
           color: Colors.black, // Fallback background
         ),
-        child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ── 1. Blurred Background (Eliminates empty space) ────────
-          if (news.imageUrl.isNotEmpty)
-            ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-              child: CachedNetworkImage(
-                imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.black),
-                errorWidget: (context, url, error) => Container(color: Colors.black),
+        child: Column(
+          children: [
+            // ── 1. Top Half: Image ────────
+            Expanded(
+              flex: 35, // Reduced from 45% to give more room to text on small screens
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (news.imageUrl.isNotEmpty)
+                    ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                      child: CachedNetworkImage(
+                        imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: Colors.black),
+                        errorWidget: (context, url, error) => Container(color: Colors.black),
+                      ),
+                    ),
+                    
+                  if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
+                    VideoPreviewWidget(url: news.videoUrl!)
+                  else if (news.imageUrl.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
+                      fit: BoxFit.contain, // Prevents cropping
+                    )
+                  else
+                    const Center(
+                      child: Icon(Icons.article, size: 60, color: Colors.white24),
+                    ),
+
+                  // Small gradient at the bottom to blend with the text section smoothly
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 1.0),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.2],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             
-          // ── 2. Foreground Image (Uncropped, perfect aspect ratio) ────────
-          if (news.videoUrl != null && news.videoUrl!.isNotEmpty)
-            Align(
-              alignment: Alignment.topCenter,
-              child: FractionallySizedBox(
-                heightFactor: 0.5,
-                child: VideoPreviewWidget(url: news.videoUrl!),
-              ),
-            )
-          else if (news.imageUrl.isNotEmpty)
-            Align(
-              alignment: Alignment.topCenter,
-              child: FractionallySizedBox(
-                heightFactor: imageHeightFactor,
-                child: CachedNetworkImage(
-                  imageUrl: _optimizeCloudinaryUrl(news.imageUrl.trim()),
-                  fit: BoxFit.contain, // Prevents cropping, maintains framing
-                ),
-              ),
-            )
-          else
-            const Center(
-              child: Icon(Icons.article, size: 60, color: Colors.white24),
-            ),
-
-          // ── 3. Cinematic Gradient Overlay ────────
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 1.0), // Solid black at very bottom
-                  Colors.black.withValues(alpha: 0.85), // Dark over text
-                  Colors.black.withValues(alpha: 0.5), // Blend zone
-                  Colors.transparent,            // Transparent at very top
-                ],
-                stops: gradientStops,
-              ),
-            ),
-          ),
-          
-          // ── 4. Content at Bottom ────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, isTablet ? 40 : 24),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isTablet ? 700 : double.infinity),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            // ── 2. Bottom Half: Text Content ────────
+            Expanded(
+              flex: 65, // Increased from 55% to prevent overflow
+              child: Container(
+                color: Colors.black, // Solid background so text is perfectly readable
+                width: double.infinity,
+                child: SafeArea(
+                  bottom: true,
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, 10, 20, isTablet ? 60 : 100),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: isTablet ? 700 : double.infinity),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                   // Title
                   Text(
                     news.title,
                     style: TextStyle(
-                      fontSize: isTablet ? 32 : 24,
+                      fontSize: isTablet ? 32 : 21,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       height: 1.3,
                     ),
-                    maxLines: 4,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
@@ -150,11 +147,11 @@ class NewsCard extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.9),
                       height: 1.5,
                     ),
-                    maxLines: 8,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 
-                const SizedBox(height: 24),
+                const Spacer(),
                 
                 // ── Footer: Categories & Meta ────────
                 Row(
@@ -265,14 +262,17 @@ class NewsCard extends StatelessWidget {
                     ],
                   ),
                 ]
-              ],
-            ), // Column
-          ), // ConstrainedBox
-        ), // Align
-      ), // Padding
-        ],
-      ),
-    ));
+                          ],
+                        ), // Column
+                      ), // ConstrainedBox
+                  ), // Padding
+                ), // SafeArea
+              ), // Container
+            ), // Expanded
+          ],
+        ), // Column
+      ), // Container
+    );
   }
 
   String _optimizeCloudinaryUrl(String url) {

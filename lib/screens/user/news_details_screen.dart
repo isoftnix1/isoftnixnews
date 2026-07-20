@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import '../../models/news_model.dart';
 import '../../providers/language_provider.dart';
@@ -45,6 +46,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
       _news = widget.news;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<NewsProvider>().recordNewsView(widget.news!.id);
+        _logFirebaseView(widget.news!);
       });
     } else if (widget.newsId != null) {
       _loadNewsById(widget.newsId!);
@@ -82,6 +84,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
           _isLoading = false;
         });
         context.read<NewsProvider>().recordNewsView(id);
+        _logFirebaseView(news);
       }
     } catch (e) {
       if (mounted) {
@@ -104,9 +107,25 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
   }
 
   void _shareArticle(NewsModel news) {
+    FirebaseAnalytics.instance.logShare(
+      contentType: 'article',
+      itemId: news.id,
+      method: 'native_share',
+    );
     Share.share(
       _buildShareText(news),
       subject: news.title,
+    );
+  }
+
+  void _logFirebaseView(NewsModel news) {
+    FirebaseAnalytics.instance.logEvent(
+      name: 'read_article',
+      parameters: {
+        'article_id': news.id,
+        'article_title': news.title,
+        'category': news.categoryName ?? 'General',
+      },
     );
   }
 

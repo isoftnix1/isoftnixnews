@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../providers/news_provider.dart';
 
 class ExternalArticleScreen extends StatefulWidget {
@@ -37,6 +38,14 @@ class _ExternalArticleScreenState extends State<ExternalArticleScreen> {
     if (widget.newsId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<NewsProvider>().recordNewsView(widget.newsId!);
+        FirebaseAnalytics.instance.logEvent(
+          name: 'read_article',
+          parameters: {
+            'article_id': widget.newsId!,
+            'article_title': widget.title,
+            'category': 'External',
+          },
+        );
       });
     }
   }
