@@ -350,7 +350,9 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: isUser ? Theme.of(context).colorScheme.primary : Colors.grey[200],
+          color: isUser 
+              ? Theme.of(context).colorScheme.primary 
+              : (Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[200]),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -361,7 +363,9 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
         child: Text(
           message['content'],
           style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
+            color: isUser 
+                ? Colors.white 
+                : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87),
             fontSize: 16,
           ),
         ),
@@ -488,7 +492,7 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -519,14 +523,18 @@ class _PersonalChatScreenState extends State<PersonalChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _textController,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
+                        hintStyle: TextStyle(color: Theme.of(context).hintColor),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.grey[100],
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[100],
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                       onSubmitted: _sendMessage,

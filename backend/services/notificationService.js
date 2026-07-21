@@ -20,8 +20,9 @@ async function sendNotificationToTokens(tokens, title, body, data = {}, imageUrl
 
   let optimizedImageUrl = imageUrl;
   if (optimizedImageUrl && optimizedImageUrl.includes('cloudinary.com') && optimizedImageUrl.includes('/upload/')) {
-    // Compress and format to JPG to ensure it stays under Android's 1MB FCM limit
-    optimizedImageUrl = optimizedImageUrl.replace('/upload/', '/upload/c_limit,w_800,q_auto,f_jpg/');
+    // Compress and crop to a perfect square (800x800). This makes the collapsed thumbnail perfectly square and small, 
+    // leaving plenty of room for text. Android will natively handle it when expanded!
+    optimizedImageUrl = optimizedImageUrl.replace('/upload/', '/upload/c_fill,w_800,h_800,g_center,q_auto,f_jpg/');
   }
 
   const message = {

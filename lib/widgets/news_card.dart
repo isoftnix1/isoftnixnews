@@ -43,16 +43,8 @@ class NewsCard extends StatelessWidget {
 
     // Responsive checks
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth > 600;
 
-    // Adjust image height based on device type to prevent overlap with text on tall screens
-    final double imageHeightFactor = isTablet ? 0.60 : 0.45;
-
-    // Adjust gradient stops so it doesn't consume the whole tablet screen
-    final List<double> gradientStops = isTablet
-        ? const [0.0, 0.3, 0.55, 1.0]  // Tighter gradient on tablet
-        : const [0.0, 0.45, 0.65, 1.0]; // Taller gradient on phone
 
     return GestureDetector(
       onTap: onTap,
@@ -64,7 +56,7 @@ class NewsCard extends StatelessWidget {
           children: [
             // ── 1. Top Half: Image ────────
             Expanded(
-              flex: 35, // Reduced from 45% to give more room to text on small screens
+              // Image takes all remaining space after the text claims what it needs
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -101,7 +93,6 @@ class NewsCard extends StatelessWidget {
                           Colors.black.withValues(alpha: 1.0),
                           Colors.transparent,
                         ],
-                        stops: const [0.0, 0.2],
                       ),
                     ),
                   ),
@@ -110,16 +101,14 @@ class NewsCard extends StatelessWidget {
             ),
             
             // ── 2. Bottom Half: Text Content ────────
-            Expanded(
-              flex: 65, // Increased from 55% to prevent overflow
-              child: Container(
+            Container(
                 color: Colors.black, // Solid background so text is perfectly readable
                 width: double.infinity,
                 child: SafeArea(
                   bottom: true,
                   top: false,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 10, 20, isTablet ? 60 : 100),
+                    padding: EdgeInsets.fromLTRB(20, 10, 20, isTablet ? 60 : 70), // Reduced bottom padding slightly
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: isTablet ? 700 : double.infinity),
                       child: Column(
@@ -151,9 +140,9 @@ class NewsCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 
-                const Spacer(),
-                
-                // ── Footer: Categories & Meta ────────
+                  const SizedBox(height: 24),
+                  
+                  // ── Footer: Categories & Meta ────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -268,7 +257,6 @@ class NewsCard extends StatelessWidget {
                   ), // Padding
                 ), // SafeArea
               ), // Container
-            ), // Expanded
           ],
         ), // Column
       ), // Container

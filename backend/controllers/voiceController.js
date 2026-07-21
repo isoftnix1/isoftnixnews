@@ -57,9 +57,9 @@ const getVoiceSummary = async (req, res) => {
       const articles = [];
       console.log(`[AI Voice] 3. Fetching top articles for categories: ${targetCategories.join(', ')}...`);
 
-      // 3. Fetch 1 top article for each category on the target date
+      // 3. Fetch top articles for each category, applying date filter if Groq detected a specific date
       for (const catName of targetCategories) {
-        const query = `
+        let query = `
           SELECT 
             n.id, 
             n.title_${lang} AS title, 
@@ -70,12 +70,21 @@ const getVoiceSummary = async (req, res) => {
           JOIN categories c ON nc.category_id = c.id
           WHERE c.name_en ILIKE $1
             AND n.is_published = true
-          ORDER BY n.created_at DESC
-          LIMIT 1
         `;
-        const result = await pool.query(query, [`%${catName}%`]);
+        const queryParams = [`%${catName}%`];
+
+        if (date) {
+          query += ` AND n.created_at::date = $2::date `;
+          queryParams.push(date);
+        }
+
+        // Fetch up to 5 articles per category instead of just 1, so it tells ALL news published that day
+        query += ` ORDER BY n.created_at DESC LIMIT 5 `;
+        
+        const result = await pool.query(query, queryParams);
         if (result.rows.length > 0) {
-          articles.push(result.rows[0]);
+          // Add all found articles to the list
+          articles.push(...result.rows);
         }
       }
 

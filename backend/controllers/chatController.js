@@ -84,16 +84,25 @@ const sendMessage = async (req, res) => {
 
       const articles = [];
       for (const catName of targetCategories) {
-        const query = `
+        let query = `
           SELECT n.title_${lang} AS title, n.content_${lang} AS content, c.name_en AS category_name
           FROM news n
           JOIN news_categories nc ON n.id = nc.news_id
           JOIN categories c ON nc.category_id = c.id
           WHERE c.name_en ILIKE $1 AND n.is_published = true
-          ORDER BY n.created_at DESC LIMIT 1
         `;
-        const result = await pool.query(query, [`%${catName}%`]);
-        if (result.rows.length > 0) articles.push(result.rows[0]);
+        const queryParams = [`%${catName}%`];
+
+        if (date) {
+          query += ` AND n.created_at::date = $2::date `;
+          queryParams.push(date);
+        }
+
+        // Fetch up to 5 articles per category instead of just 1, so it tells ALL news published that day
+        query += ` ORDER BY n.created_at DESC LIMIT 5 `;
+
+        const result = await pool.query(query, queryParams);
+        if (result.rows.length > 0) articles.push(...result.rows);
       }
       aiResponse = await aiService.generateVoiceSummary(articles, lang, category, history);
       console.log(`[ChatController] Final news response generated.`);

@@ -88,14 +88,17 @@ class PushNotificationService {
     final imageUrl = message.data['imageUrl']?.toString() ??
         (Platform.isAndroid ? notification.android?.imageUrl : notification.apple?.imageUrl);
 
+    AndroidBitmap<Object>? thumbnailIcon;
     BigPictureStyleInformation? bigPictureStyle;
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(imageUrl)).timeout(const Duration(seconds: 5));
         if (response.statusCode == 200) {
+          final bitmap = ByteArrayAndroidBitmap(response.bodyBytes);
+          thumbnailIcon = bitmap;
           bigPictureStyle = BigPictureStyleInformation(
-            ByteArrayAndroidBitmap(response.bodyBytes),
+            bitmap,
             hideExpandedLargeIcon: true,
           );
         }
@@ -116,7 +119,7 @@ class PushNotificationService {
           importance: Importance.high,
           priority: Priority.high,
           icon: _colorIcon,
-          largeIcon: const DrawableResourceAndroidBitmap(_largeIcon),
+          largeIcon: thumbnailIcon,
           color: const Color(0xFFF97316),
           colorized: true,
           styleInformation: bigPictureStyle,
