@@ -23,7 +23,6 @@ class PushNotificationService {
 
   /// Full-color app logo derived from [assets/icon/app_icon.png].
   static const String _colorIcon = '@drawable/ic_notification_color';
-  static const String _largeIcon = '@drawable/ic_notification_large';
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
